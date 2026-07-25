@@ -12,6 +12,7 @@ description: 마크다운 콘텐츠 검증. 품질 3축(사실·구조·독립�
 > 리더빌리티·톤 검증 기준을 변경할 때는 이 스킬만 수정합니다.
 
 > **가독성 규칙 원천**: [config/style-rules/base/readability.md](../../config/style-rules/base/readability.md) (ops-agent SSOT, 미러: `~/.claude/ops-agent/style-rules/base/`)
+> **AI 티 규칙 원천**: [config/style-rules/base/ai-tells.md](../../config/style-rules/base/ai-tells.md) (A~K 분류·심각도·품질 등급). 정량 지표는 [metrics/metrics-spec.md](../../config/style-rules/metrics/metrics-spec.md), 슬림 카운터는 [metrics/tells_count.py](../../config/style-rules/metrics/tells_count.py)
 
 ---
 
@@ -139,14 +140,14 @@ Phase 1~4 전체를 수행합니다.
 
 ---
 
-#### 축 4: 가독성
+#### 축 4: 가독성 + AI 티
 
-> "마크다운 형식이 독자의 스캔/이해를 돕는가?"
+> "마크다운 형식이 독자의 스캔/이해를 돕는가? AI 가 쓴 흔적이 남아 있지 않은가?"
 
 [config/style-rules/base/readability.md § 검증 체크리스트](../../config/style-rules/base/readability.md)의 규칙 전체를 적용합니다.
 콘텐츠 유형 프로필에 따라 `●`(필수) 위반은 반드시 보고, `○`(권장) 위반은 제안으로 분류합니다.
 
-검증 순서:
+가독성 검증 순서:
 1. 헤딩 계층 (H1-H4)
 2. 문단 구조 (P1-P8)
 3. 목록/테이블 (L1-L4)
@@ -156,6 +157,12 @@ Phase 1~4 전체를 수행합니다.
 7. Blockquote 렌더링 (B1)
 8. 저자 톤 (T1-T15)
 9. 한국어 구두점 (PN1-PN6)
+
+AI 티 검증 ([ai-tells.md](../../config/style-rules/base/ai-tells.md) A~K):
+1. A~K 패턴을 span 단위로 탐지하고 S1/S2/S3 로 분류한다
+2. S1 건수와 S2 빈도를 집계한다. **정확도 우선** 요청 시 `python3 config/style-rules/metrics/tells_count.py <파일>` 로 이중피동·이중조사·대명사밀도·light verb·연결어미 쉼표·대칭 대구(C-10)를 객관 수치로 확보해 눈대중 카운트를 대체한다
+3. S1 0건·S2 ≤2건 → 등급 A, S1 0건·S2 ≤4건 → B, S1 1~2건 → C, S1 3건+ → D (ai-tells.md 기준 재사용)
+4. C-10 대칭 대구는 정규식 오탐이 있을 수 있으므로 카운트를 참고치로 보고 문맥으로 최종 판정한다
 
 ---
 
@@ -176,9 +183,10 @@ Phase 1~4 전체를 수행합니다.
 ### 축 3. 독립 가치: {양호 | 확인 필요}
 {관찰 사항}
 
-### 축 4. 가독성: {PASS | FAIL}
-- 필수 규칙: {N}/{M} 통과
-- 권장 규칙: {N}/{M} 통과
+### 축 4. 가독성 + AI 티: {PASS | FAIL}
+- 가독성 필수 규칙: {N}/{M} 통과
+- 가독성 권장 규칙: {N}/{M} 통과
+- AI 티: S1 {n}건 · S2 {n}건 → 품질 등급 {A | B | C | D}
 
 | 위반 (필수) | 위치 | 교정안 |
 |------------|------|--------|
@@ -196,6 +204,8 @@ Phase 1~4 전체를 수행합니다.
 1. 필수 위반 항목만 자동 교정 (권장은 제안만)
 2. 교정 전후 diff를 보여주고 확인 후 적용
 3. 로컬 파일: 직접 수정
+
+**과윤문 게이트 (4대 철칙 #4 실측)**: 교정 후 `python3 config/style-rules/metrics/tells_count.py --before <원문> --after <교정본>` 으로 변경률을 측정한다. `warn`(30% 초과)이면 사용자에게 경고, `abort`(50% 초과)이면 교정을 중단하고 원문 의미 훼손 여부를 사람이 검토한다. inline 모드(content-write Phase 3)는 이 스크립트 게이트를 호출하지 않는다(핫패스 비용 회피, 기존 체크리스트 자가 검증만).
 
 ---
 
