@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.4.0] - 2026-07-26
+
+### Fixed
+- feat: AI 티 SSOT 를 im-not-ai v2.3 와 정합 — 신규 서브패턴(C-10 대칭 대구 등), 심각도 재조정, 정량 인프라(metrics/tells_count.py·metrics-spec, references/scholarship) 추가, content-verify 축4 AI 티 정량화 + change_rate 게이트. ADR 0001(AI 티 제거 우선순위와 저자 취향 경계) 신설. A-1 `통해` 는 실증상 AI 티 아님으로 판정되어 forbidden-words hook 에서 제거
+
 ## [6.3.6] - 2026-07-21
 
 ### Fixed

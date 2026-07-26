@@ -38,12 +38,6 @@
       "taxonomyId": "ai-tells.md D-7"
     },
     {
-      "pattern": "을 통해|를 통해",
-      "replacement": "~로/~으로 (직접 수단)",
-      "reason": "AI 슬롭 — 영어 'through' 직역체",
-      "taxonomyId": "ai-tells.md A-1"
-    },
-    {
       "pattern": "활용하여|활용함으로써|활용한",
       "replacement": "써서/사용하여",
       "reason": "AI 슬롭 — 격식 과잉",
