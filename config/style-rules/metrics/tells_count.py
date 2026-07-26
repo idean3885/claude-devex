@@ -356,13 +356,27 @@ def compute_all(text: str, strip_code_blocks: bool = True) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+def _resolve_input(value: str) -> str:
+    """경로가 실재하면 파일 내용을, 아니면 리터럴 텍스트로 취급한다.
+
+    윤문 중 인메모리 문자열(원문/교정본)을 임시 파일 없이 바로 넘길 수 있게 한다.
+    파일명과 같은 짧은 리터럴이 cwd 에 실재하면 파일로 읽히는 경계 케이스가 있으나,
+    윤문 대상은 대개 여러 줄 산문이라 실무상 충돌하지 않는다.
+    """
+    try:
+        with open(value, "r", encoding="utf-8") as f:
+            return f.read()
+    except (OSError, ValueError):
+        return value
+
+
 def _main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="AI 티 슬림 카운터 (baseline·외부 의존 없음)"
     )
-    parser.add_argument("path", nargs="?", help="분석할 파일 경로")
-    parser.add_argument("--before", help="change_rate 단독 계산용 원문 파일 경로")
-    parser.add_argument("--after", help="change_rate 단독 계산용 윤문 파일 경로")
+    parser.add_argument("path", nargs="?", help="분석할 텍스트 또는 파일 경로")
+    parser.add_argument("--before", help="change_rate 단독 계산용 원문 (텍스트 또는 파일 경로)")
+    parser.add_argument("--after", help="change_rate 단독 계산용 윤문 (텍스트 또는 파일 경로)")
     parser.add_argument(
         "--ignore-markup", action="store_true",
         help="change_rate 계산 시 마크업 전용 줄·줄머리 장식 제거",
@@ -376,10 +390,8 @@ def _main(argv: list[str] | None = None) -> int:
     if args.before is not None or args.after is not None:
         if args.before is None or args.after is None:
             parser.error("--before 와 --after 는 함께 지정해야 합니다")
-        with open(args.before, "r", encoding="utf-8") as f:
-            before = f.read()
-        with open(args.after, "r", encoding="utf-8") as f:
-            after = f.read()
+        before = _resolve_input(args.before)
+        after = _resolve_input(args.after)
         rate = change_rate(before, after, ignore_markup=args.ignore_markup)
         out = {
             "change_rate": rate,
@@ -394,10 +406,9 @@ def _main(argv: list[str] | None = None) -> int:
         return 0
 
     if not args.path:
-        parser.error("파일 경로 또는 --before/--after 를 지정하세요")
+        parser.error("텍스트·파일 경로 또는 --before/--after 를 지정하세요")
 
-    with open(args.path, "r", encoding="utf-8") as f:
-        text = f.read()
+    text = _resolve_input(args.path)
     result = compute_all(text, strip_code_blocks=not args.no_strip_code)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
