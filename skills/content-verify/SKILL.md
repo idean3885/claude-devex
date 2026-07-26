@@ -205,7 +205,7 @@ AI 티 검증 ([ai-tells.md](../../config/style-rules/base/ai-tells.md) A~K):
 2. 교정 전후 diff를 보여주고 확인 후 적용
 3. 로컬 파일: 직접 수정
 
-**과윤문 게이트 (4대 철칙 #4 실측)**: 교정 후 `python3 config/style-rules/metrics/tells_count.py --before <원문> --after <교정본>` 으로 변경률을 측정한다. `warn`(30% 초과)이면 사용자에게 경고, `abort`(50% 초과)이면 교정을 중단하고 원문 의미 훼손 여부를 사람이 검토한다. inline 모드(content-write Phase 3)는 이 스크립트 게이트를 호출하지 않는다(핫패스 비용 회피, 기존 체크리스트 자가 검증만).
+**과윤문 게이트 (4대 철칙 #4 실측)**: 교정 후 `python3 config/style-rules/metrics/tells_count.py --before <원문> --after <교정본>` 으로 변경률을 측정한다. `<원문>`·`<교정본>` 은 텍스트를 그대로 넘겨도 되고 파일 경로여도 된다(경로가 실재하면 파일, 아니면 리터럴로 취급). `warn`(30% 초과)이면 사용자에게 경고, `abort`(50% 초과)이면 교정을 중단하고 원문 의미 훼손 여부를 사람이 검토한다. inline 모드(content-write Phase 3)는 이 스크립트 게이트를 호출하지 않는다(핫패스 비용 회피, 기존 체크리스트 자가 검증만).
 
 ---
 

@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.4.1] - 2026-07-27
+
+### Fixed
+- fix: tells_count.py 변경률·분석 인자가 리터럴 텍스트와 파일 경로를 모두 수용 (인메모리 윤문 비교 가능)
+
 ## [6.4.0] - 2026-07-26
 
 ### Fixed
