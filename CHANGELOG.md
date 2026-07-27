@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.4.5] - 2026-07-27
+
+### Fixed
+- refactor: What 추상화 룰을 재사용 가능한 모듈로 분리
+
 ## [6.4.4] - 2026-07-27
 
 ### Fixed
