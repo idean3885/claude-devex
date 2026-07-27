@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.4.4] - 2026-07-27
+
+### Fixed
+- feat: K-4(추상 대상 물리 조작 동사) 신설 및 T8 판정 기준 명시
+
 ## [6.4.3] - 2026-07-27
 
 ### Fixed
