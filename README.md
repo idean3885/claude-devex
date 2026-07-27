@@ -95,6 +95,16 @@ config/style-rules/
 
 표현 가드는 응답을 막거나 자동으로 고쳐 쓰지 않고, 사전 주입 + 사후 통지로 동작합니다. 출력 직전 자가 대조는 어시스턴트의 몫입니다. 룰 포맷·마커 스키마 등 설정 상세는 [docs/hooks-config.md](docs/hooks-config.md).
 
+## 4. 채용 공고 크롤링 엔진
+
+SPA 채용 페이지를 헤드리스 Chromium 으로 렌더링해 공고를 추출하고, 룰로 점수를 매겨 마크다운 리포트를 냅니다. 대상 목록·판정 기준·임계값·출력 경로는 엔진이 갖지 않고 소비 프로젝트의 프로파일이 공급합니다.
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/job-crawler/crawl.js --profile config/job-crawler/mine.json
+```
+
+스킬이 아니라 스크립트로 둔 이유는 매 세션 시스템 프롬프트를 차지할 만큼 자주 쓰는 도구가 아니어서입니다. 스키마는 [config/job-crawler/example.json](config/job-crawler/example.json), 사용법·한계는 [scripts/job-crawler/README.md](scripts/job-crawler/README.md).
+
 ## Usage Tracking
 
 ticket 단위로 토큰·비용을 추적합니다. worktree-per-task 환경에서 정확히 분리됩니다. `/usage-start · checkpoint · snap · complete · report` 5종을 제공하며, 집계 원리는 [docs/usage-cwd-aggregation.md](docs/usage-cwd-aggregation.md) 를 참조하세요.
