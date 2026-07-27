@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.4.3] - 2026-07-27
+
+### Fixed
+- fix: post-merge-sync 가 마켓플레이스 업데이트 실패를 감지하지 못하던 문제 수정
+
 ## [6.4.2] - 2026-07-27
 
 ### Fixed

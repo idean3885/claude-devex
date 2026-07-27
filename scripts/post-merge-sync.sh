@@ -32,7 +32,15 @@ BEFORE_VERSIONS=""
 [ -d "$CACHE_BASE" ] && BEFORE_VERSIONS=$(ls -1 "$CACHE_BASE" 2>/dev/null || true)
 
 # --- Step 1: 마켓플레이스 업데이트 ---
-claude plugins update "$PLUGIN_NAME" 2>&1 || { echo "✘ 마켓플레이스 업데이트 실패"; exit 1; }
+# `claude plugins update` 는 대상을 찾지 못해 실패해도 exit 0 을 반환한다(실측).
+# 종료 코드만 검사하면 실패가 성공으로 통과해 Step 2·3 까지 흘러간 뒤에야 드러난다.
+# 실패 문구를 직접 검사해 이 지점에서 끊는다.
+UPDATE_OUT=$(claude plugins update "$PLUGIN_NAME" 2>&1) || true
+echo "$UPDATE_OUT"
+if printf '%s' "$UPDATE_OUT" | grep -qE 'Failed to update|not found'; then
+  echo "✘ 마켓플레이스 업데이트 실패 — 플러그인 식별자($PLUGIN_NAME) 를 확인하세요"
+  exit 1
+fi
 echo "✔ 마켓플레이스 업데이트 완료"
 
 # --- Step 2: 새 캐시 디렉토리 git 복원 ---
