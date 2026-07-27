@@ -1,0 +1,52 @@
+{
+  "version": "1.0",
+  "project": "my-project",
+  "description": "채용 공고 크롤러 프로파일. 소비 프로젝트가 자기 스코프(~/.claude/job-crawler/profiles/ 또는 config/job-crawler/)에 복사해 채운다. 엔진(scripts/job-crawler/)은 이 스키마만 알고 대상·기준·임계값·출력 경로는 갖지 않는다. project=프로파일 매칭 키(후보가 여러 개일 때 현재 디렉토리 이름과 매칭).",
+
+  "threshold": 5,
+
+  "detail": {
+    "enabled": true,
+    "cap": 12,
+    "maxChars": 4000
+  },
+
+  "output": {
+    "dir": "job-crawler-output"
+  },
+
+  "report": {
+    "restCap": 10
+  },
+
+  "_targetsNote": "크롤링 대상. url 만 필수. waitFor(렌더 대기 selector)·extract.container(공고 항목 selector)를 알면 정확도가 올라가고, 생략하면 링크 텍스트 heuristic 으로 떨어진다.",
+  "targets": {
+    "예시회사": {
+      "url": "https://careers.example.com/jobs",
+      "waitFor": "a[href*='/jobs/']",
+      "extract": {
+        "container": "a[href*='/jobs/']"
+      }
+    },
+    "셀렉터를 모르는 회사": {
+      "url": "https://example.org/careers"
+    }
+  },
+
+  "_rulesNote": "핏 판정 기준. pattern 은 정규식 문자열, flags 기본 'i', delta 는 가감점, label 은 리포트 근거 표기. 같은 label 은 한 공고에서 한 번만 가산된다. 자기 강점·갭을 여기에 적는다 — 엔진은 기준을 갖지 않는다.",
+  "_rulesPitfall": "한글 앞뒤에 \\b 를 쓰지 않는다. JS 정규식의 \\w 는 ASCII 라 한글은 단어 문자가 아니고, '백엔드 인턴' 의 '인턴' 앞은 공백-한글이라 경계가 서지 않아 \\b인턴 이 매칭되지 않는다. 한글은 그냥 (인턴), 영문만 \\bIntern\\b 로 감싼다.",
+  "rules": [
+    { "pattern": "(백엔드|Backend|Server\\s*Engineer)", "delta": 5, "label": "직군 매칭" },
+    { "pattern": "\\b(Java|Spring)", "delta": 3, "label": "주력 스택" },
+    { "pattern": "\\b(Kubernetes|K8s|Helm)", "delta": 2, "label": "인프라 스택" },
+    { "pattern": "(시니어|\\bSenior\\b)", "delta": 3, "label": "연차 매칭" },
+    { "pattern": "(신입|인턴|\\bIntern(ship)?\\b)", "delta": -10, "label": "연차 불일치" },
+    { "pattern": "(프론트엔드|디자이너|마케팅|영업|\\b(Frontend|Designer|Marketer|Sales)\\b)", "delta": -10, "label": "타 직군" }
+  ],
+
+  "_fallbackNote": "extract.container 가 없거나 매칭이 0건일 때 '공고처럼 보이는 링크'를 고르는 사전 필터. 어떤 직군을 찾는지에 좌우되므로 필요하면 덮어쓴다. 생략하면 엔진 기본값을 쓴다.",
+  "fallbackLinkPattern": {
+    "pattern": "(개발|엔지니어|채용|Engineer|Developer|Backend|Server|SRE|Platform)",
+    "flags": "i"
+  }
+}
