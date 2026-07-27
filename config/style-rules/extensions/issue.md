@@ -1,10 +1,10 @@
 # 이슈 익스텐션
 
 > **Base**: `base/readability.md` + `base/tone.md` + `base/punctuation.md` + `base/ai-tells.md`
-> **Adds**: 사내 이슈(Dooray 태스크·GitHub issue) 작성 특화 규칙
+> **Adds**: 사내 이슈(이슈 트래커 태스크·GitHub issue) 작성 특화 규칙
 
 연계 스킬:
-- `ops-agent-vault:dooray-api` (Dooray 태스크 조회·생성·수정)
+- `ops-agent-vault:dooray-api` (이슈 트래커 태스크 조회·생성·수정)
 - `ops-agent:flow` / `ops-agent:issue` (GitHub issue 흐름)
 
 ---
@@ -13,7 +13,7 @@
 
 | 매체 | 적용 |
 |------|------|
-| Dooray 태스크 본문 | 본 익스텐션 |
+| 이슈 트래커 태스크 본문 | 본 익스텐션 |
 | GitHub issue (사내·퍼블릭) | 본 익스텐션 |
 | GitLab/Jira 이슈 | 본 익스텐션 |
 
@@ -51,7 +51,7 @@ PR 머지 시 CI 워크플로 시작 안 됨 (main 브랜치 한정)
 
 ## ISS3. 우선순위·라벨
 
-조직 컨벤션에 따라 우선순위를 부여한다. 사내 Dooray 는 `ops-agent-vault:dooray-api` 의 우선순위 코드 참조.
+조직 컨벤션에 따라 우선순위를 부여한다. 사내 이슈 트래커 provider 는 `ops-agent-vault:dooray-api` 의 우선순위 코드 참조.
 
 라벨 사용 시 다음 카테고리만 권장:
 - `bug` / `feat` / `chore` / `docs` / `refactor` / `test`
@@ -61,7 +61,7 @@ PR 머지 시 CI 워크플로 시작 안 됨 (main 브랜치 한정)
 
 ## ISS4. 재현 절차는 명령어·코드 그대로
 
-재현 절차에는 명령어·요청 paylod 를 코드 블록으로 기재한다.
+재현 절차에는 명령어·요청 payload 를 코드 블록으로 기재한다.
 "~을 시도했다" 같은 추상 표현 금지.
 
 Bad:
@@ -108,7 +108,7 @@ ISS1 5요소(재현·환경·기대·실제·영향)는 **버그 리포트** 형
 | yml/properties key (`management.endpoints.web.exposure.include`) | 구현 선택지 | PR diff |
 | 메트릭 이름·필드명 (`jvm_memory_used_bytes`, `failed_reason`) | 구현 명명 | PR diff |
 | 검증 절차 단계 (`./gradlew test`, `curl /actuator/prometheus`) | 검수 책임은 PR | PR Checklist |
-| 일정·소요 시간 추정치를 본문에 풀어 쓰는 형태 | Dooray 우선순위 / 소요시간 필드 별도 존재 | provider 의 필드 |
+| 일정·소요 시간 추정치를 본문에 풀어 쓰는 형태 | 이슈 트래커 우선순위 / 소요시간 필드 별도 존재 | provider 의 필드 |
 
 ### Bad / Good
 
