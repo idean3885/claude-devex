@@ -154,10 +154,10 @@ CLAUDE.md의 작성 규칙과 마크다운 줄바꿈 규칙을 따른다.
 
 **리더빌리티 + 톤 검증: ops-agent:content-verify 위임 (GATE)**
 
-> **리더빌리티 24규칙 + 톤 검증은 ops-agent:content-verify(standalone)에 위임한다. ops-agent:content-publish가 직접 검증하지 않는다.**
+> **리더빌리티 전체 규칙 + 톤 검증은 ops-agent:content-verify(standalone)에 위임한다. ops-agent:content-publish가 직접 검증하지 않는다.**
 
 ops-agent:content-verify가 수행하는 검증:
-1. 리더빌리티 24규칙 (콘텐츠 유형별 프로필 적용)
+1. 리더빌리티 전체 규칙 (콘텐츠 유형별 프로필 적용)
 2. 저자 톤 (합쇼체, 주어 생략, 감정어 최소화)
 3. 검증 리포트 반환
 

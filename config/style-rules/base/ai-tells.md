@@ -3,8 +3,8 @@
 한국어 글(블로그·위키·이슈·PoC·데일리로그·동료리뷰 등 모든 문서)에서
 AI 가 쓴 글의 흔적("AI 티")을 식별·차단·교정하기 위한 분류 체계.
 
-> **출처**: 분류 체계 골격(A~J 10대 카테고리, 심각도 S1/S2/S3)은
-> [`epoko77-ai/im-not-ai`](https://github.com/epoko77-ai/im-not-ai) (MIT) 의 한국어 humanize 스킬에서 차용했다.
+> **출처**: AI 티 분류는 A~K 카테고리(심각도 S1/S2/S3)로 구성된다.
+> 골격인 A~J 10대 카테고리는 [`epoko77-ai/im-not-ai`](https://github.com/epoko77-ai/im-not-ai) (MIT) 의 한국어 humanize 스킬에서 차용했고, K(감정체·의인화)는 본 SSOT 자체 확장이다.
 > 본 SSOT 는 그 골격 위에 한국어 기술 블로그·사내 위키·PoC 문서 맥락의 처방·예시·forbidden-words hook 패턴 매핑을 자체 작성한 파생물이다.
 > 번역투 계열 신규 분류의 학술·코퍼스 근거는 `../references/scholarship.md`, 정량 지표 정의는 `../metrics/metrics-spec.md` 를 참조한다.
 > 라이선스: im-not-ai 의 MIT 조항을 준수하며, 본 SSOT 도 동일 MIT 로 배포된다.
@@ -14,7 +14,7 @@ AI 가 쓴 글의 흔적("AI 티")을 식별·차단·교정하기 위한 분류
 ## 적용 범위
 
 이 SSOT 는 **모든 한국어 문서**에 적용되는 기초 룰이다.
-문서 유형별 추가 규약은 `../extensions/{blog,wiki,poc,info,issue,dailylog,peer-review}.md` 에서 base 를 import 한 뒤 얹는다.
+문서 유형별 추가 규약은 `../extensions/{blog,wiki,poc,info,knowledge,issue,dailylog,peer-review,work-review}.md` 에서 base 를 import 한 뒤 얹는다.
 
 소비자:
 - `ops-agent/hooks/forbidden-words-{prompt,stop}.sh` — `forbidden-words.json` 의 S1 패턴을 사전 가이드로 주입하고 직전 응답 위반을 사후 통지 (출력 차단은 하지 않음)
@@ -72,7 +72,7 @@ AI 가 쓴 글의 흔적("AI 티")을 식별·차단·교정하기 위한 분류
 
 ---
 
-## 분류 체계 (A~J)
+## 분류 체계 (A~K)
 
 ### A. 번역투 (영어 직역체)
 

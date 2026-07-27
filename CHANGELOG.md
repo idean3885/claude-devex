@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.4.2] - 2026-07-27
+
+### Fixed
+- docs: 스타일 규칙 SSOT 교차 참조·카운트 정합 및 요약 규칙 유형 프로필화
+
 ## [6.4.1] - 2026-07-27
 
 ### Fixed
