@@ -39,7 +39,7 @@ ccusage session --since {task.startedAt as YYYYMMDD} --json --breakdown
 Parse the JSON output. Match sessions by sessionId from the task's sessions array.
 
 **Matching logic:**
-- ccusage sessions have `sessionId` field (project path based, e.g., `-Users-nhn-git-project-aetherion-spec-guide`)
+- ccusage sessions have `sessionId` field (project path based, e.g., `-Users-me-git-project-example-repo`)
 - Task sessions have `id` field (UUID, e.g., `ebedca79-...`)
 - Match: task session `id` should appear as a JSONL filename under the ccusage session's project path
 - For simplicity: aggregate ALL ccusage sessions whose `sessionId` matches any of the task's binding projects
