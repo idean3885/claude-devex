@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.8.0] - 2026-07-28
+
+### Fixed
+- feat: 산출물 분량 축(LN1~LN2) 신설, 어시스턴트 발화 분량 지침 추가, 강제 지시어 하향
+
 ## [6.7.0] - 2026-07-28
 
 ### Fixed
