@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
+import { existsSync, lstatSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
 import { execSync } from 'child_process';
 import { homedir } from 'os';
@@ -201,16 +201,44 @@ function ensurePluginGitIdentity() {
 }
 
 // --- Cleanup stale version directories ---
+// 자기 버전보다 **낮은** 버전만 정리한다. 같거나 높은 버전은 건드리지 않는다.
+// 이전 구현은 이름이 다르면 전부 지웠다. 그래서 릴리스 직후 구버전 세션의 SessionStart 가
+// 방금 설치된 신버전을 지워, 동기 스크립트가 성공을 보고한 뒤에도 캐시가 구버전으로 남았다.
+//
+// 삭제한 자리에는 현재 버전을 가리키는 심볼릭을 남긴다. 옛 경로를 잡고 있는 활성 세션의
+// hook 호출이 ENOENT 로 실패하지 않고 신버전 코드를 해소한다.
+function parseSemver(name) {
+  const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(name);
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+}
+
+function compareSemver(a, b) {
+  for (let i = 0; i < 3; i++) {
+    if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1;
+  }
+  return 0;
+}
+
 function cleanupStaleVersions() {
   try {
     const cacheParent = resolve(pluginRoot, '..');
     const currentDir = pluginRoot.split('/').pop();
-    const siblings = readdirSync(cacheParent);
-    for (const dir of siblings) {
-      if (dir !== currentDir && /^\d+\.\d+\.\d+$/.test(dir)) {
-        const target = join(cacheParent, dir);
-        execSync(`rm -rf "${target}"`, { timeout: 5000, stdio: 'ignore' });
-      }
+    const current = parseSemver(currentDir);
+    // 버전 디렉토리가 아니면(워크트리·개발 경로) 비교 기준이 없다. 아무것도 지우지 않는다.
+    if (!current) return;
+
+    for (const dir of readdirSync(cacheParent)) {
+      if (dir === currentDir) continue;
+      const other = parseSemver(dir);
+      if (!other) continue;
+      if (compareSemver(other, current) >= 0) continue;
+
+      const target = join(cacheParent, dir);
+      // 이미 심볼릭이면 옛 경로 연결 장치다. 그대로 둔다.
+      if (lstatSync(target).isSymbolicLink()) continue;
+
+      execSync(`rm -rf "${target}"`, { timeout: 5000, stdio: 'ignore' });
+      execSync(`ln -sfn "${currentDir}" "${target}"`, { timeout: 1000, stdio: 'ignore' });
     }
   } catch { /* non-critical */ }
 }
