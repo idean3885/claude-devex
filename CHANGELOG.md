@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.10.0] - 2026-07-29
+
+### Fixed
+- 대외비 가드 타겟 판정 fail-open 수정 및 본문 옵션 추출 5종 추가
+
 ## [6.9.0] - 2026-07-28
 
 ### Fixed

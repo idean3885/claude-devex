@@ -222,10 +222,15 @@ function runConfidentialGuard(command, cwd) {
   extractOption(command, 'body', texts);
   extractOption(command, 'title', texts);
   extractOption(command, 'subject', texts);
+  extractOption(command, 'notes', texts);       // gh release 본문
   extractShortOption(command, 'm', texts);
+  extractShortOption(command, 'b', texts);      // gh --body
+  extractShortOption(command, 't', texts);      // gh --title
+  extractShortOption(command, 'n', texts);      // gh release --notes
   extractFileOption(command, 'body-file', texts);
   extractFileOption(command, 'notes-file', texts);
   extractFileOption(command, 'file', texts);
+  extractShortFileOption(command, 'F', texts);  // git commit -F · gh --body-file 단축
 
   const cfg = loadConfig();
   if (isEmptyConfig(cfg)) {
@@ -391,34 +396,45 @@ function resolveTarget(command, cwd, internalHosts) {
     return { scope: 'external', reason: `GH_HOST=${host}` };
   }
 
-  // 2. gh -R 플래그: owner/repo 형식으로는 호스트 판별 불가 → gh config 조회
-  if (/\bgh\s+(issue|pr|release)\b/.test(command)) {
-    try {
-      const defaultHost = execSync('gh config get -h github.com active_account 2>/dev/null; gh auth status 2>&1', {
-        cwd: effectiveCwd, encoding: 'utf8', timeout: 2000,
-      });
-      for (const host of hosts) {
-        if (defaultHost.includes(host)) {
-          return { scope: 'internal', reason: `gh default host=${host}` };
-        }
+  // 2. gh -R 에 호스트가 붙은 형태 (host/owner/repo)
+  const ghRepoMatch = command.match(/\bgh\s+\S+[^&|;]*?\s(?:-R|--repo)[\s=]+["']?([^\s"']+)/);
+  if (ghRepoMatch) {
+    const parts = ghRepoMatch[1].split('/');
+    // host/owner/repo 3단이면 첫 단이 호스트. owner/repo 2단은 호스트 정보가 없다.
+    if (parts.length >= 3) {
+      const host = parts[0];
+      if (hosts.some(h => host === h || host.endsWith('.' + h))) {
+        return { scope: 'internal', reason: `-R host=${host}` };
       }
-    } catch { /* gh 조회 실패 시 external 로 fallback */ }
-    return { scope: 'external', reason: 'gh default host 미확인' };
+      return { scope: 'external', reason: `-R host=${host}` };
+    }
   }
 
-  // 3. git commit: 현재 레포의 origin remote URL 검사
-  if (/\bgit\s+commit\b/.test(command)) {
+  // 3. gh (호스트 미지정) · git commit: 레포 리모트로 판정한다.
+  //
+  // gh 는 GH_HOST 도 host 붙은 -R 도 없으면 현재 디렉토리의 git 리모트에서 레포를 해소한다.
+  // 따라서 판정 근거도 리모트여야 한다. 이전 구현은 `gh auth status` 출력 전문에 사내 호스트
+  // 문자열이 있는지만 봤는데, 그 출력에는 로그인된 **모든** 호스트가 나열된다.
+  // 사내·개인 계정을 함께 쓰는 머신에서는 항상 사내로 판정되어 externalOnly 규칙이
+  // 통째로 건너뛰어졌다. 퍼블릭 레포 대상 명령이 사내 용어를 통과시키는 fail-open 이었다.
+  if (/\bgh\s+(issue|pr|release)\b/.test(command) || /\bgit\s+commit\b/.test(command)) {
     try {
       const url = execSync('git remote get-url origin 2>/dev/null', {
         cwd: effectiveCwd, encoding: 'utf8', timeout: 2000,
       }).trim();
+      if (!url) {
+        return { scope: 'external', reason: `origin remote 없음 (cwd=${effectiveCwd})` };
+      }
       for (const host of hosts) {
         if (url.includes(host)) {
           return { scope: 'internal', reason: `origin remote=${host}` };
         }
       }
       return { scope: 'external', reason: `origin remote 외부: ${url.substring(0, 60)}` };
-    } catch { return { scope: 'external', reason: `origin remote 조회 실패 (cwd=${effectiveCwd})` }; }
+    } catch {
+      // 판별 불가는 external 로 닫는다. 대외비 가드에서 fail-open 은 방향이 거꾸로다.
+      return { scope: 'external', reason: `origin remote 조회 실패 (cwd=${effectiveCwd})` };
+    }
   }
 
   // 4. 기본값: 안전하게 external
@@ -505,6 +521,21 @@ function extractFileOption(command, name, out) {
   }
 }
 
+// 단축 파일 옵션 (`git commit -F <path>`, `gh ... -F <path>`).
+// 이 경로가 빠져 있어 -F 로 넘긴 커밋 메시지·본문이 검사되지 않았다.
+function extractShortFileOption(command, name, out) {
+  const re = new RegExp(`(?:^|\\s)-${name}(?:=(\\S+)|\\s+(\\S+))`, 'g');
+  let m;
+  while ((m = re.exec(command)) !== null) {
+    const path = stripQuotes(m[1] || m[2] || '');
+    if (path && existsSync(path)) {
+      try {
+        out.push({ source: `-${name}:${path}`, value: readFileSync(path, 'utf8') });
+      } catch { /* 읽기 실패는 무시 */ }
+    }
+  }
+}
+
 function stripQuotes(s) {
   if (s.length >= 2) {
     const f = s[0], l = s[s.length - 1];
@@ -532,9 +563,13 @@ function runWhatAbstractionGuard(command) {
   const texts = [];
   // 제목은 이슈/PR 번호 prefix 또는 짧은 도메인 표현이라 검사 대상 아님 — body/m/subject·body-file만
   extractOption(command, 'body', texts);
+  extractOption(command, 'notes', texts);
   extractShortOption(command, 'm', texts);
+  extractShortOption(command, 'b', texts);
   extractFileOption(command, 'body-file', texts);
   extractFileOption(command, 'notes-file', texts);
+  extractFileOption(command, 'file', texts);
+  extractShortFileOption(command, 'F', texts);
 
   if (texts.length === 0) return { blocked: false, hits: [] };
 
