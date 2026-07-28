@@ -119,9 +119,9 @@ PoC 시점 실측:
 
 ```
 unique cwds: 96
-  aetherion 루트:                  9590 assistant entries
-  worktrees/aetherion-be/feature-3159  260 entries  ← #3159 작업
-  worktrees/gpulive-portal-fe/feature-3053  776 entries  ← #3053 FE 작업
+  project-a 루트:                        9590 assistant entries
+  worktrees/project-a-be/feature-NNNN     260 entries  ← #NNNN 작업
+  worktrees/project-a-fe/feature-MMMM     776 entries  ← #MMMM FE 작업
   ...
 ```
 

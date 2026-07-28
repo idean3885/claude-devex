@@ -15,7 +15,7 @@ Start tracking token usage for a new task.
 
 ## Parameters
 
-- **label** (required): Human-readable task name (e.g., "GPU Live 프로젝트 CRUD 정책서")
+- **label** (required): Human-readable task name (e.g., "결제 모듈 정책서 작성")
 - **approach** (optional): Method being used (e.g., "manual", "workflow-runner", "autopilot"). Default: "manual"
 - **tags** (optional): Comma-separated tags for grouping (e.g., "spec,planning")
 
