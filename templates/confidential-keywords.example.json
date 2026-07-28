@@ -2,18 +2,44 @@
   "$schema": "로컬 전용 대외비 키워드 설정. ~/.claude/ops-agent/confidential-keywords.local.json 에 배치하면 pre-tool-use.mjs 훅이 자동 로드.",
   "$usage": [
     "1. 이 파일을 ~/.claude/ops-agent/confidential-keywords.local.json 로 복사",
-    "2. keywords, patterns를 조직/레포 특화 용어로 채움",
+    "2. 표면별로 규칙을 나눠 채움 ($surfaces 참고)",
     "3. 공개 GitHub 레포에는 절대 커밋되지 않도록 .gitignore 처리",
     "4. OPS_AGENT_CONFIDENTIAL_DRYRUN=1 로 드라이런 후 오탐 조정",
     "5. allowPaths 로 키워드를 정당하게 다루는 문서·설정 경로를 커밋 diff 검사에서 제외"
   ],
+  "$surfaces": {
+    "public": "사내 호스트 아님 + 공개 확인 → keywords + patterns + externalOnly",
+    "private": "사내 호스트 아님 + 비공개 확인 → keywords + patterns 만. 본인 비공개 공간이라 추가 규칙 없음",
+    "internal": "internalHosts 에 해당 → keywords + patterns + personalDevOnly",
+    "$visibility": "공개 여부는 gh repo view 로 확인하고 ~/.claude/ops-agent/cache/repo-visibility.json 에 7일 캐시. 조회 실패는 public 으로 닫는다. 캐시 항목을 직접 적으면 저장소 단위 예외가 된다."
+  },
   "keywords": [
-    "{조직 내부 시스템명}",
-    "{내부 프로젝트 코드네임}",
-    "{사내에서만 쓰는 약어}"
+    "{표면과 무관하게 항상 막을 용어}"
   ],
   "patterns": [
     "^[a-z]+Id\\s*[:=]\\s*\\d{15,}"
+  ],
+  "externalOnly": {
+    "$comment": "공개 표면에서만 막는다. 사내 작업에는 정상적으로 쓰는 용어. 사내 → 공개 방향.",
+    "keywords": [
+      "{조직 내부 시스템명}",
+      "{내부 프로젝트 코드네임}",
+      "{사내 플랫폼·제품명}"
+    ],
+    "patterns": [
+      "{사내 트래커 번호 형태}"
+    ]
+  },
+  "personalDevOnly": {
+    "$comment": "사내 공유 표면에서만 막는다. 개인 환경 부트스트랩·개인 도메인·개인 툴킷 흔적. 개인 → 사내 방향.",
+    "keywords": [
+      "{개인 소유 도메인}",
+      "{개인 디바이스·툴킷 경로}"
+    ],
+    "patterns": []
+  },
+  "internalHosts": [
+    "{사내 git 호스트}"
   ],
   "allowPaths": [
     "^docs/.*-keywords\\.md$"

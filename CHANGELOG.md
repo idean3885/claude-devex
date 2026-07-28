@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.11.0] - 2026-07-29
+
+### Fixed
+- 대외비 가드 표면 3분류(public·private·internal) 및 개인→사내 방향 규칙 집행 추가
+
 ## [6.10.2] - 2026-07-29
 
 ### Fixed
