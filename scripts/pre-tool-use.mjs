@@ -7,6 +7,10 @@
  *
  * 1. 대외비 가드 (GATE 0): 공개 표면 쓰기 명령(gh issue/pr/release, git commit)의
  *    본문·제목·메시지에서 대외비 키워드/패턴 히트 시 하드 차단.
+ *    git commit 은 메시지 외에 **커밋 대상 diff 의 추가된 줄**도 검사한다. 파일로 들어간
+ *    대외비(예시 문자열 등)가 메시지 검사만으로는 걸러지지 않기 때문이다.
+ *    삭제된 줄은 검사하지 않는다 — 대외비를 제거하는 커밋이 막히면 안 된다.
+ *    제외 경로: 설정의 `allowPaths` 정규식.
  *
  *    타겟 호스트 인식:
  *    - `gh` 명령: GH_HOST 환경 변수 또는 `-R host/owner/repo` 플래그에서 호스트 추출
@@ -29,7 +33,7 @@ import { execSync } from 'child_process';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
-import { scanWhatViolations } from './what-guard-rules.mjs';
+import { scanWhatViolations, snippet } from './what-guard-rules.mjs';
 
 // ─── stdin 수집 ───
 let input = '';
@@ -59,12 +63,16 @@ const ARGOCD_WRITE = new Set([
   'terminate-op', 'actions', 'update-password',
 ]);
 const HELM_WRITE = new Set(['install', 'upgrade', 'uninstall', 'delete', 'rollback']);
+// 커밋 diff 검사 상한 (같은 TDZ 사유로 상단 선언)
+const DIFF_SCAN_LIMIT = 256 * 1024;
 const VALUE_FLAGS = new Set([
   '-n', '--namespace', '--context', '--cluster', '--user', '--kubeconfig',
   '-o', '--output', '-l', '--selector', '--field-selector', '-f', '--filename',
   '--server', '--token', '--as', '--as-group', '--cache-dir', '--request-timeout',
   '--grpc-web-root-path',
 ]);
+
+let truncationNotice = '';
 
 if (!DISABLE) {
   try {
@@ -81,11 +89,12 @@ if (!DISABLE) {
           ? `\n타겟: ${result.target.scope} (${result.target.reason})`
           : '';
         const msg = `${header} 공개 표면 쓰기 명령에서 대외비 히트:${targetInfo}\n${hitLines}\n\n` +
-          `해결: 본문/제목/메시지에서 해당 키워드 제거 후 재시도.\n` +
+          `해결: 본문·제목·메시지 또는 커밋 대상 파일에서 해당 키워드 제거 후 재시도.\n` +
+          `커밋 대상 diff 는 추가된 줄만 검사한다. 키워드를 정당하게 다루는 경로는 설정의 allowPaths 로 제외.\n` +
           `허용 리스트 조정: ~/.claude/ops-agent/confidential-keywords.local.json`;
         if (DRYRUN) {
           process.stderr.write(msg + '\n');
-          respondContinue(sessionContext);
+          respondContinue();
           process.exit(0);
         } else {
           process.stdout.write(JSON.stringify({
@@ -97,6 +106,14 @@ if (!DISABLE) {
           }));
           process.exit(0);
         }
+      }
+
+      // 검사 한도를 넘겨 일부만 본 경우, 차단하지 않아도 그 사실을 알린다.
+      // 조용히 넘기면 "전부 검사됨" 으로 읽힌다.
+      if (result.diffTruncated && !result.blocked) {
+        truncationNotice = `[ops-agent 대외비 가드] 커밋 대상 diff 가 검사 한도(`
+          + `${Math.floor(DIFF_SCAN_LIMIT / 1024)}KB)를 넘어 일부만 검사했습니다.\n`
+          + `한도 이후 내용은 확인되지 않았습니다. 공개 표면 대상이면 직접 확인하세요.`;
       }
 
       // 도메인 What 추상화 가드: 커밋·PR·이슈 본문에서 구현 세부 노출 차단
@@ -160,8 +177,18 @@ if (!DISABLE) {
       }
     }
   } catch (e) {
+    // 훅 내부 오류는 통신을 망치지 않도록 통과시키되, 조용히 삼키지 않는다.
+    // 과거 `snippet` 미정의로 키워드 가드가 통째로 무력화됐는데도 드러나지 않은 사례가 있다.
+    // 가드가 판정하지 못한 사실 자체를 사용자에게 보인다.
+    const detail = (e && e.message) || String(e);
     if (process.env.OPS_AGENT_HOOK_DEBUG === '1') process.stderr.write('HOOKERR: ' + (e && e.stack || e) + '\n');
-    // 입력 파싱 실패 시 가드는 생략하고 기본 응답 (훅이 통신을 망치지 않도록)
+    process.stdout.write(JSON.stringify({
+      continue: true,
+      systemMessage: `[ops-agent 가드 내부 오류] 가드가 판정하지 못했습니다: ${detail}\n`
+        + `이 명령은 검사 없이 통과합니다. 공개 표면 대상이면 직접 확인하세요.\n`
+        + `상세: OPS_AGENT_HOOK_DEBUG=1`,
+    }));
+    process.exit(0);
   }
 }
 
@@ -171,6 +198,10 @@ respondContinue();
 // 세션 컨텍스트는 SessionStart 훅이 1회 주입한다 (scripts/session-start.mjs).
 // 이 훅은 가드 판정만 담당하고, 통과 시 추가 컨텍스트를 싣지 않는다.
 function respondContinue() {
+  if (truncationNotice) {
+    process.stdout.write(JSON.stringify({ continue: true, systemMessage: truncationNotice }));
+    return;
+  }
   process.stdout.write('{"continue":true}');
 }
 
@@ -194,14 +225,19 @@ function runConfidentialGuard(command, cwd) {
   extractShortOption(command, 'm', texts);
   extractFileOption(command, 'body-file', texts);
   extractFileOption(command, 'notes-file', texts);
-
-  if (texts.length === 0) {
-    return { blocked: false, hits: [] };
-  }
+  extractFileOption(command, 'file', texts);
 
   const cfg = loadConfig();
   if (isEmptyConfig(cfg)) {
     return { blocked: false, hits: [] };
+  }
+
+  // 커밋 대상 파일 내용도 커밋·푸시로 공개된다. 메시지만 보면 파일로 들어간
+  // 대외비를 놓친다 (예시 문자열이 주요 유입 경로). 커밋 시점에 diff 를 검사한다.
+  const diffTruncated = collectCommitDiffTexts(command, cwd, cfg.allowPaths, texts);
+
+  if (texts.length === 0) {
+    return { blocked: false, hits: [], diffTruncated };
   }
 
   // 타겟 결정 — internal 이면 externalOnly 규칙은 스킵
@@ -220,7 +256,73 @@ function runConfidentialGuard(command, cwd) {
     collectHits(t, externalRules.keywords, externalRules.patterns, hits);
   }
 
-  return { blocked: hits.length > 0, hits, target };
+  return { blocked: hits.length > 0, hits, target, diffTruncated };
+}
+
+// 커밋 대상 diff 의 **추가된 줄만** 검사 대상으로 모은다.
+//
+// 추가된 줄만 보는 이유: 삭제된 줄까지 검사하면 대외비를 **제거하는** 커밋이 차단된다.
+// 정리 작업이 자기 가드에 막히는 모순을 피한다.
+//
+// 검사 시점을 파일 편집이 아니라 커밋으로 잡은 이유:
+//   - 편집 시점에는 그 파일이 어디로 갈지 알 수 없다. gitignore 대상일 수도, 사내 레포일 수도 있다.
+//     커밋 시점에는 레포 리모트로 타겟(internal·external)을 판정할 수 있고, 기존 판정 로직을 그대로 쓴다.
+//   - 추적 대상만 diff 에 오르므로 로컬 전용 파일이 자연히 제외된다.
+//   - 편집마다가 아니라 커밋당 1회만 돌아 비용이 낮다.
+//   - 커밋 전에 막으면 아직 공개되지 않은 상태다. 편집 시점 검사 대비 늦지만 발행 전이다.
+function collectCommitDiffTexts(command, cwd, allowPaths, texts) {
+  if (!/\bgit\s+commit\b/.test(command)) return false;
+
+  // -a / --all / -am 은 추적 파일의 미스테이징 변경까지 커밋한다.
+  const includeUnstaged = /\bgit\s+commit\b[^&|;]*?(?:\s-{1,2}(?:a|all)\b|\s-[a-zA-Z]*a[a-zA-Z]*\b)/.test(command);
+  const range = includeUnstaged ? 'HEAD' : '--cached';
+
+  let out = '';
+  try {
+    out = execSync(`git diff ${range} --unified=0 --no-color`, {
+      cwd, encoding: 'utf8', timeout: 1200, maxBuffer: 16 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    // 최초 커밋(HEAD 없음)·git 아님 등. --cached 로 한 번 더 시도한다.
+    if (range === 'HEAD') {
+      try {
+        out = execSync('git diff --cached --unified=0 --no-color', {
+          cwd, encoding: 'utf8', timeout: 1200, maxBuffer: 16 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'],
+        });
+      } catch { return false; }
+    } else {
+      return false;
+    }
+  }
+  if (!out) return false;
+
+  const perFile = new Map();
+  let file = null;
+  let scanned = 0;
+  let truncated = false;
+
+  for (const line of out.split('\n')) {
+    if (line.startsWith('+++ ')) {
+      const path = line.slice(4).replace(/^b\//, '').trim();
+      file = path === '/dev/null' ? null : path;
+      continue;
+    }
+    if (line.startsWith('--- ') || line.startsWith('@@') || line.startsWith('diff --git')) continue;
+    if (!file || line.charCodeAt(0) !== 43 /* '+' */) continue;
+
+    const body = line.slice(1);
+    if (!body) continue;
+    if (allowPaths.some(re => re.test(file))) continue;
+
+    scanned += body.length;
+    if (scanned > DIFF_SCAN_LIMIT) { truncated = true; break; }
+    perFile.set(file, (perFile.get(file) || '') + body + '\n');
+  }
+
+  for (const [path, value] of perFile) {
+    texts.push({ source: `커밋 대상 ${path}`, value });
+  }
+  return truncated;
 }
 
 function collectHits(t, keywords, patterns, hits) {
@@ -329,7 +431,7 @@ function loadConfig() {
   const empty = {
     keywords: [], patterns: [],
     externalOnly: { keywords: [], patterns: [] },
-    internalHosts: [],
+    internalHosts: [], allowPaths: [],
   };
   if (!existsSync(cfgPath)) return empty;
   try {
@@ -342,6 +444,8 @@ function loadConfig() {
         patterns: toRegexArray(raw.externalOnly && raw.externalOnly.patterns),
       },
       internalHosts: toStringArray(raw.internalHosts),
+      // 커밋 diff 검사에서 제외할 경로 정규식. 키워드를 정당하게 다루는 문서·설정용.
+      allowPaths: toRegexArray(raw.allowPaths),
     };
   } catch {
     return empty;

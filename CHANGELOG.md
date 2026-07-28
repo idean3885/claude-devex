@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.9.0] - 2026-07-28
+
+### Fixed
+- feat: 커밋 대상 diff 대외비 검사 추가. fix: 키워드 가드 미차단 결함 및 내부 오류 무언 통과 수정
+
 ## [6.8.2] - 2026-07-28
 
 ### Fixed
