@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.6.0] - 2026-07-28
+
+### Fixed
+- fix: 훅 컨텍스트 반복 주입 제거 — 룰·세션 컨텍스트를 SessionStart 1회 주입으로 이관, 지침 문서 3중 중복 해소
+
 ## [6.5.0] - 2026-07-27
 
 ### Fixed
