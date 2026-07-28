@@ -67,6 +67,12 @@ const HELM_WRITE = new Set(['install', 'upgrade', 'uninstall', 'delete', 'rollba
 const DIFF_SCAN_LIMIT = 256 * 1024;
 // 레포 공개 여부 캐시 유효 기간. 공개 전환은 드물고, 만료 시 재조회한다.
 const VISIBILITY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+// `git commit` 판정. git 과 서브커맨드 사이에는 전역 옵션이 올 수 있다.
+// `\bgit\s+commit\b` 만 쓰면 `git -C <path> commit` 이 커밋으로 인식되지 않아
+// 파일 내용 검사가 통째로 건너뛰어진다. 알려진 전역 옵션 형태만 허용해
+// `git log --grep commit` 같은 조회 명령을 오인하지 않는다.
+const GIT_GLOBAL_OPT = String.raw`(?:-[cC]\s+\S+|--(?:git-dir|work-tree|namespace|exec-path)(?:=\S+|\s+\S+)|--no-pager|--no-replace-objects|--bare|--literal-pathspecs|-p|--paginate)`;
+const GIT_COMMIT_RE = new RegExp(String.raw`\bgit\s+(?:${GIT_GLOBAL_OPT}\s+)*commit\b`);
 const VALUE_FLAGS = new Set([
   '-n', '--namespace', '--context', '--cluster', '--user', '--kubeconfig',
   '-o', '--output', '-l', '--selector', '--field-selector', '-f', '--filename',
@@ -88,21 +94,28 @@ if (!DISABLE) {
         const hitLines = result.hits.map(h =>
           `  - "${h.keyword}" (${h.source}): ${h.context}`).join('\n');
         const scope = result.target ? result.target.scope : 'public';
-        const what = scope === 'internal'
-          ? '사내 공유 표면 쓰기에서 개인 환경 흔적 히트'
-          : '공개 표면 쓰기에서 대외비 히트';
+        const what = result.undeterminable
+          ? '커밋 대상 레포를 판별할 수 없어 파일 내용을 검사하지 못함'
+          : scope === 'internal'
+            ? '사내 공유 표면 쓰기에서 개인 환경 흔적 히트'
+            : '공개 표면 쓰기에서 대외비 히트';
         const targetInfo = result.target
           ? `\n표면: ${scope} (${result.target.reason})`
           : '';
-        const scopeHint = scope === 'internal'
-          ? `개인 인프라·부트스트랩 세부는 본인 공간에만 남긴다. 규칙 목록: 설정의 personalDevOnly\n`
-          : `비공개 저장소면 표면이 private 로 잡혀야 한다. 잘못 잡혔으면 캐시를 확인한다:\n` +
-            `  ~/.claude/ops-agent/cache/repo-visibility.json\n`;
-        const msg = `${header} ${what}:${targetInfo}\n${hitLines}\n\n` +
-          `해결: 본문·제목·메시지 또는 커밋 대상 파일에서 해당 키워드 제거 후 재시도.\n` +
-          `커밋 대상 diff 는 추가된 줄만 검사한다. 키워드를 정당하게 다루는 경로는 설정의 allowPaths 로 제외.\n` +
-          scopeHint +
-          `허용 리스트 조정: ~/.claude/ops-agent/confidential-keywords.local.json`;
+        const msg = result.undeterminable
+          ? `${header} ${what}:\n  ${result.undeterminable}\n\n`
+            + `해결: 아래 중 하나로 다시 실행한다.\n`
+            + `  - 그 레포를 작업 디렉토리로 두고 셸 변수 없이 실행\n`
+            + `  - \`cd\` · \`git -C\` 인자에 실제 경로를 쓴다 (훅은 셸 변수를 확장할 수 없다)\n`
+            + `검사하지 못한 상태를 통과로 두지 않는다. 대외비 가드에서 미검사와 무해는 다르다.`
+          : `${header} ${what}:${targetInfo}\n${hitLines}\n\n`
+            + `해결: 본문·제목·메시지 또는 커밋 대상 파일에서 해당 키워드 제거 후 재시도.\n`
+            + `커밋 대상 diff 는 추가된 줄만 검사한다. 키워드를 정당하게 다루는 경로는 설정의 allowPaths 로 제외.\n`
+            + (scope === 'internal'
+              ? `개인 인프라·부트스트랩 세부는 본인 공간에만 남긴다. 규칙 목록: 설정의 personalDevOnly\n`
+              : `비공개 저장소면 표면이 private 로 잡혀야 한다. 잘못 잡혔으면 캐시를 확인한다:\n`
+                + `  ~/.claude/ops-agent/cache/repo-visibility.json\n`)
+            + `허용 리스트 조정: ~/.claude/ops-agent/confidential-keywords.local.json`;
         if (DRYRUN) {
           process.stderr.write(msg + '\n');
           respondContinue();
@@ -222,7 +235,7 @@ function runConfidentialGuard(command, cwd) {
     /\bgh\s+issue\s+(create|edit|comment)\b/,
     /\bgh\s+pr\s+(create|edit|comment|review)\b/,
     /\bgh\s+release\s+(create|edit)\b/,
-    /\bgit\s+commit\b/,
+    GIT_COMMIT_RE,
   ];
   if (!writePatterns.some(re => re.test(command))) {
     return { blocked: false, hits: [] };
@@ -248,16 +261,34 @@ function runConfidentialGuard(command, cwd) {
     return { blocked: false, hits: [] };
   }
 
+  // 대상 디렉토리를 한 번 구해 표면 판정과 diff 검사가 같은 경로를 쓰게 한다.
+  const resolved = resolveCommandCwd(command, cwd);
+
+  // 경로를 해소하지 못했으면 커밋 대상 파일을 읽을 수 없다. 통과시키면
+  // "검사하지 못함" 이 "검사해서 깨끗함" 과 같아진다. 커밋이면 막는다.
+  if (!resolved.ok && GIT_COMMIT_RE.test(command)) {
+    return {
+      blocked: true,
+      undeterminable: resolved.reason,
+      hits: [{
+        keyword: '(커밋 대상 레포 판별 불가)',
+        source: resolved.source,
+        context: resolved.reason,
+      }],
+      target: { scope: 'public', reason: resolved.reason },
+    };
+  }
+
   // 커밋 대상 파일 내용도 커밋·푸시로 공개된다. 메시지만 보면 파일로 들어간
   // 대외비를 놓친다 (예시 문자열이 주요 유입 경로). 커밋 시점에 diff 를 검사한다.
-  const diffTruncated = collectCommitDiffTexts(command, cwd, cfg.allowPaths, texts);
+  const diffTruncated = collectCommitDiffTexts(command, resolved.cwd, cfg.allowPaths, texts);
 
   if (texts.length === 0) {
     return { blocked: false, hits: [], diffTruncated };
   }
 
   // 표면 판정 — public · private · internal
-  const target = resolveTarget(command, cwd, cfg.internalHosts);
+  const target = resolveTarget(command, resolved.cwd, cfg.internalHosts);
 
   // 항상 차단되는 규칙 (존재 자체가 대외비인 키워드)
   const alwaysRules = { keywords: cfg.keywords, patterns: cfg.patterns };
@@ -290,10 +321,10 @@ function runConfidentialGuard(command, cwd) {
 //   - 편집마다가 아니라 커밋당 1회만 돌아 비용이 낮다.
 //   - 커밋 전에 막으면 아직 공개되지 않은 상태다. 편집 시점 검사 대비 늦지만 발행 전이다.
 function collectCommitDiffTexts(command, cwd, allowPaths, texts) {
-  if (!/\bgit\s+commit\b/.test(command)) return false;
+  if (!GIT_COMMIT_RE.test(command)) return false;
 
   // -a / --all / -am 은 추적 파일의 미스테이징 변경까지 커밋한다.
-  const includeUnstaged = /\bgit\s+commit\b[^&|;]*?(?:\s-{1,2}(?:a|all)\b|\s-[a-zA-Z]*a[a-zA-Z]*\b)/.test(command);
+  const includeUnstaged = new RegExp(GIT_COMMIT_RE.source + String.raw`[^&|;]*?(?:\s-{1,2}(?:a|all)\b|\s-[a-zA-Z]*a[a-zA-Z]*\b)`).test(command);
   const range = includeUnstaged ? 'HEAD' : '--cached';
 
   let out = '';
@@ -390,11 +421,35 @@ function expandHome(path) {
 }
 
 function extractCwdFromCommand(command, fallbackCwd) {
+  return resolveCommandCwd(command, fallbackCwd).cwd;
+}
+
+/**
+ * 명령이 가리키는 작업 디렉토리를 구하고, 해소 가능했는지도 함께 돌려준다.
+ *
+ * 표면 판정과 커밋 diff 검사는 **같은 경로**를 봐야 한다. 예전에는 표면 판정만 `cd`·`git -C` 를
+ * 해석하고 diff 검사는 원본 cwd 를 써서, `cd <repo> && git commit` 이 다른 레포의 diff 를 읽었다.
+ * 원본 cwd 에 스테이징된 게 없으면 검사할 텍스트가 없어 그대로 통과했다.
+ *
+ * 셸 변수(`cd "$DIR"`)는 훅이 확장할 수 없다. 그런 경우 `ok: false` 로 알린다.
+ * 판별 불가를 통과로 취급하면 "검사하지 못함" 과 "검사해서 깨끗함" 이 같아진다.
+ */
+function resolveCommandCwd(command, fallbackCwd) {
   const cdMatch = command.match(/\bcd\s+["']?([^\s"'&;|]+)["']?/);
-  if (cdMatch) return expandHome(cdMatch[1]);
   const gitCMatch = command.match(/\bgit\s+-C\s+["']?([^\s"'&;|]+)["']?/);
-  if (gitCMatch) return expandHome(gitCMatch[1]);
-  return fallbackCwd;
+  const raw = (cdMatch && cdMatch[1]) || (gitCMatch && gitCMatch[1]);
+  if (!raw) return { cwd: fallbackCwd, ok: true, source: 'hook cwd' };
+
+  const source = cdMatch ? 'cd' : 'git -C';
+  // 미확장 셸 표현이 남아 있으면 경로가 아니다.
+  if (/[$`*?]/.test(raw)) {
+    return { cwd: fallbackCwd, ok: false, source, reason: `${source} 인자에 미확장 셸 표현: ${raw}` };
+  }
+  const path = expandHome(raw);
+  if (!existsSync(path)) {
+    return { cwd: fallbackCwd, ok: false, source, reason: `${source} 경로 없음: ${path}` };
+  }
+  return { cwd: path, ok: true, source };
 }
 
 // 표면은 셋이다. 호스트만 보면 둘로만 갈라져 비공개 저장소가 공개 표면으로 오판된다.
@@ -405,9 +460,11 @@ function extractCwdFromCommand(command, fallbackCwd) {
 //
 // 두 방향을 같은 강도로 막는다. 사내 → public 은 대외비 위반이고,
 // 개인 → internal 은 개인 환경이 사내 공유 표면에 드러나는 문제다.
+// cwd 는 호출자가 resolveCommandCwd 로 이미 해소한 경로다. 여기서 다시 추출하지 않는다.
+// 두 곳이 각자 추출하면 표면과 검사 대상이 어긋날 수 있다.
 function resolveTarget(command, cwd, internalHosts) {
   const hosts = internalHosts || [];
-  const effectiveCwd = extractCwdFromCommand(command, cwd);
+  const effectiveCwd = cwd;
   const isInternalHost = host => hosts.some(h => host === h || host.endsWith('.' + h));
 
   // 1. gh 명령: GH_HOST 환경 변수 접두어 우선
@@ -437,7 +494,7 @@ function resolveTarget(command, cwd, internalHosts) {
   // 문자열이 있는지만 봤는데, 그 출력에는 로그인된 **모든** 호스트가 나열된다.
   // 사내·개인 계정을 함께 쓰는 머신에서는 항상 사내로 판정되어 externalOnly 규칙이
   // 통째로 건너뛰어졌다. 퍼블릭 레포 대상 명령이 사내 용어를 통과시키는 fail-open 이었다.
-  if (/\bgh\s+(issue|pr|release)\b/.test(command) || /\bgit\s+commit\b/.test(command)) {
+  if (/\bgh\s+(issue|pr|release)\b/.test(command) || GIT_COMMIT_RE.test(command)) {
     let url = '';
     try {
       url = execSync('git remote get-url origin 2>/dev/null', {
@@ -678,7 +735,7 @@ function runWhatAbstractionGuard(command) {
     /\bgh\s+issue\s+(create|edit|comment)\b/,
     /\bgh\s+pr\s+(create|edit|comment|review)\b/,
     /\bgh\s+release\s+(create|edit)\b/,
-    /\bgit\s+commit\b/,
+    GIT_COMMIT_RE,
   ];
   if (!writePatterns.some(re => re.test(command))) {
     return { blocked: false, hits: [] };

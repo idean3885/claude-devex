@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.11.1] - 2026-07-29
+
+### Fixed
+- cd·git -C 로 이동한 커밋이 다른 레포 diff 를 검사하던 우회 수정, 경로 판별 불가 시 차단
+
 ## [6.11.0] - 2026-07-29
 
 ### Fixed
