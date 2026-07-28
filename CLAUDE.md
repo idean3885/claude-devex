@@ -48,16 +48,7 @@ provider는 SessionStart 훅에서 git remote host 기반으로 자동 감지됩
 
 ### 스킬 목록
 
-| 스킬 | 역할 | 트리거 |
-|------|------|--------|
-| `/flow` | 이슈 플로우 단일 진입점 (issue → spec → 구현 → commit → pr) | "flow", "플로우", 자연어 수정 요청 |
-| `/org-flow` | 멀티레포 오케스트레이션 + 사내/퍼블릭 provider 분기 | "org-flow", "멀티레포" |
-| `/setup` | provider 등록, 상태 확인, overlay 설정 | "setup", "설정" |
-| `/content-write` | 콘텐츠 작성 엔진 (성격 파악, 시리즈 구조, 인라인 검증) | "콘텐츠 작성", "글 작성" |
-| `/content-verify` | 마크다운 검증 (AI 티·가독성·톤·구두점) | "검증", "가독성 검사" |
-| `/content-publish` | 블로그 발행 (Jekyll 변환) | "블로그 발행", "publish" |
-| `/cross-verify` | 교차 검증 (의사결정·설계·문서·구현 4축) | "교차 검증", "크로스 체크" |
-| `/usage-*` | ticket 단위 토큰·비용 추적 (start/checkpoint/snap/complete/report) | "사용량 추적", "스냅샷" |
+`skills/` 하위 디렉토리와 각 `SKILL.md` 의 `description` 이 정본이다.
 
 issue · spec · commit · pr 은 별도 스킬이 아니라 `/flow` 내부의 단계 가이드(`skills/flow/guides/`)로 통합되어 있다. 단계 진입 시에만 로딩된다.
 
@@ -88,39 +79,14 @@ PlantUML 사용 시: `example.puml` → `example.svg` 필수 생성
 
 타입: `init`, `feat`, `fix`, `docs`, `refactor`, `chore`
 
-## 설정 파일
-
-| 파일 | 범위 | Git |
-|------|------|-----|
-| `.claude/settings.json` | 공통 설정 | 추적 |
-| `.claude/settings.local.json` | 로컬 전용 | 무시 |
-| `.claude/skills/` | 워크플로우 스킬 | 추적 |
-
-## 프로젝트별 커스텀
-
-프로젝트 전용 설정이 필요하면:
-
-- `CLAUDE.md` 하단에 프로젝트 고유 규칙 추가
-- `README.md`에 기술 스택, 디렉토리 구조, 실행 방법 등 작성
-- `.claude/settings.local.json`에 로컬 전용 설정 추가
-
 ## 워크트리 분기
-
-여러 브랜치를 동시에 작업하거나 같은 레포의 다른 PR 을 병렬로 검토할 때 워크트리를 분기한다.
-
-| 자원 | 위치 | 비고 |
-|------|------|------|
-| 워크트리 생성 | `scripts/worktree-create.sh <state-file>` | clone-on-demand + 워크트리 일괄 생성 + vcs.xml 매핑 |
-| 워크트리 정리 | `scripts/worktree-cleanup.sh` | bare clone 포함 정리 |
-| state 파일 포맷 | `.ops-agent/state/org-flow-{ticket}.json` | 경로 컨벤션 (이름 잔재, 리네임은 별 이슈) |
-| 하네스 자체 워크트리 | Claude Code `Agent` 도구의 `isolation: "worktree"` | 단발 isolation 작업용 — 위 스크립트와 무관 |
 
 분기 판단:
 - 같은 이슈의 단일 PR → 일반 브랜치
 - 같은 레포의 여러 PR 병렬 검토 → `scripts/worktree-create.sh`
 - 단발 isolation (실험·임시 빌드) → `Agent` 도구 isolation
 
-`.ops-agent/state/` 경로명은 이전 자산 호환을 위해 유지한다. 추후 `.ops-agent/state/` 로 리네임할 가능성이 있으며 별 이슈로 추적한다.
+스크립트 사용법, state 파일 포맷, 경로 컨벤션은 [docs/worktree.md](docs/worktree.md) 참조.
 
 ---
 
@@ -130,13 +96,7 @@ PlantUML 사용 시: `example.puml` → `example.svg` 필수 생성
 
 ### 버전 관리
 
-[Semantic Versioning](https://semver.org/) 기준:
-
-| 버전 | 증가 조건 | 예시 |
-|------|-----------|------|
-| MAJOR (x.0.0) | 하위 호환 깨지는 변경 | 스킬 삭제, 인터페이스 변경 |
-| MINOR (0.x.0) | 하위 호환 새 기능 추가 | 새 스킬 추가, 기존 스킬 기능 확장 |
-| PATCH (0.0.x) | 하위 호환 버그 수정 | 오타 수정, 동작 변경 없는 문서 정리 |
+[Semantic Versioning](https://semver.org/) 기준.
 
 1인 개발 레포이므로 변경 = 버전업이다. 예외를 두지 않는다.
 
@@ -152,11 +112,7 @@ PlantUML 사용 시: `example.puml` → `example.svg` 필수 생성
 
 ### 산출물 특성
 
-| 구분 | 내용 |
-|------|------|
-| 주요 산출물 | 마크다운 (스킬, 가이드), 쉘 스크립트 |
-| 빌드 | 없음 |
-| 테스트 | 빈 디렉토리에서 설치하여 검증 |
+테스트는 빈 디렉토리에 설치해서 검증한다. 빌드 단계는 없다.
 
 ### Git Flow (이 레포)
 
@@ -179,7 +135,7 @@ main ────────────────●─────
 ### 변경 시 검증 체크리스트
 
 - [ ] **버전 범프**: VERSION, CHANGELOG.md, plugin.json, marketplace.json 4곳 모두 갱신 확인
-- [ ] 스킬 파일 존재 확인 (flow, org-flow, setup, content-write/verify/publish, cross-verify, usage-* + flow guides: issue/spec/commit/pr)
+- [ ] 스킬 파일 존재 확인 (`skills/` 전체 + `skills/flow/guides/`)
 - [ ] README.md Mermaid 다이어그램 렌더링 확인
 - [ ] CLAUDE.md 템플릿 부분과 프로젝트 부분 구분 유지
 - [ ] 적용 사례 레포에서 스킬이 정상 동작하는지 확인
@@ -197,22 +153,7 @@ main ────────────────●─────
 | 3 | **필요한 것만 활성화** | 프로젝트에 불필요한 플러그인은 비활성화 |
 | 4 | **위임 상한** | 서브 에이전트는 값을 할 때만. 기본은 직접 처리 |
 
-#### 플러그인 활성화 기준
-
-| 판단 | 조건 |
-|------|------|
-| **활성화** | 매 세션 도구를 실제로 사용하는 플러그인 |
-| **비활성화** | 시스템 프롬프트만 차지하고 간헐적으로만 사용하는 플러그인 |
-| **재검토** | 3세션 연속 미사용 시 비활성화 검토 |
-
-#### 컨텍스트 예산 의식
-
-- 플러그인이 추가하는 시스템 프롬프트 토큰을 인지할 것
-- 매 턴 고정 비용이 큰 플러그인(1만 토큰 이상)은 ROI를 검증할 것
-- 같은 텍스트를 여러 턴·여러 도구 호출에 반복해 싣지 않을 것. 정적인 내용은 세션 1회, 변하는 내용만 그때그때
-- MEMORY.md는 200행 이내, 핵심 패턴만 유지
-
-작업 강도(effort) 로 토큰을 조절하는 방법은 [docs/effort-policy.md](docs/effort-policy.md) 참조.
+플러그인 활성화 기준, 컨텍스트 예산 의식, 작업 강도(effort) 로 토큰을 조절하는 방법은 [docs/effort-policy.md](docs/effort-policy.md) 참조.
 
 #### 서브 에이전트 위임 상한
 
