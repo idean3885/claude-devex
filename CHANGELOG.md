@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.10.2] - 2026-07-29
+
+### Fixed
+- 루트 CLAUDE.md 유도 가능 내용 삭제 및 참조 자료 docs 이전 (59행, 약 837 토큰/세션 절감)
+
 ## [6.10.1] - 2026-07-29
 
 ### Fixed
