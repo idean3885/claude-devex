@@ -19,16 +19,19 @@ ops-agent 의 `config/style-rules/{base,extensions}/` 가 모든 한국어 문�
 | `base/punctuation.md` | 한국어 구두점 (PN1~PN6) |
 | `extensions/{blog,wiki,poc,info,knowledge,issue,dailylog,peer-review,work-review}.md` | 문서 유형별 추가 규칙 |
 
-표현 가드 hook(`forbidden-words.json`)은 응답을 출력 직전에 막거나 재작성하지 않는다. UserPromptSubmit 가 금지 표현 룰을 사전 주입하고, Stop 이 직전 응답 위반을 사후 통지한다. 따라서 출력 직전 패턴 자가 대조는 어시스턴트의 의무다. 패턴은 base SSOT 의 카테고리 ID(`taxonomyId`)와 1:1 매핑되어 추적된다. 사용자 추가 룰은 `~/.claude/forbidden-words.local.json` 에 작성하면 머지된다.
+표현 가드 hook(`forbidden-words.json`)은 응답을 막거나 재작성하지 않는다. 룰 목록은 SessionStart 에서 세션당 1회 주입되고, Stop 이 검출한 위반만 다음 턴에 통지된다. 출력 직전 패턴 자가 대조는 어시스턴트가 수행한다. 사용자 추가 룰은 `~/.claude/forbidden-words.local.json` 에 작성하면 머지된다. hook 동작 상세는 ops-agent `docs/hooks-config.md` 참조.
 
 ## ops-agent 개발 룰
 
-- 워킹 카피: `/Users/nhn/git-project/idean3885/claude-ops-agent/`
-- 변경은 워크트리 → `bump-version.sh` 로 버전 범프 → 커밋 → PR → 웹 머지. **main 직접 push 금지**
-- 머지 후 `./scripts/post-merge-sync.sh` 로 로컬 캐시 동기 (마켓플레이스 update + 활성 세션 경로 복원)
-- 이슈 플로우 필수 — 자식 PR 단위로 분할
-- 수동 버전 범프 금지. 반드시 `bump-version.sh` 사용
+- 워킹 카피: `~/git-project/idean3885/claude-ops-agent/`
+- 반영 경로: 워크트리 → PR → 웹 머지
+- 이슈 플로우를 거친다
 
-### 워킹 카피가 없는 경우
+되돌리기 어려운 두 가지는 전역 규칙으로 둔다.
 
-`~/.claude/plugins/cache/{plugin}/...` 에서 `.git` 이 없으면 SessionStart hook 이 자동 복원한다. 급한 경우 캐시에서 워크트리를 분기해 작업하되, 반영은 동일하게 PR → 웹 머지로만 한다. 워킹 카피가 있으면 워킹 카피 우선.
+- main 직접 push 금지
+- 수동 버전 범프 금지 (레포가 제공하는 범프 스크립트 사용)
+
+브랜치 전략·버전 기준·머지 후 동기 절차 등 레포별 상세는 각 레포의 `CLAUDE.md` 를 따른다.
+
+워킹 카피에 `.git` 이 없으면 SessionStart hook 이 복원한다. 급한 경우 캐시에서 워크트리를 분기해도 되지만 반영 경로는 동일하다. 워킹 카피가 있으면 캐시보다 우선한다.

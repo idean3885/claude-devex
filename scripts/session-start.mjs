@@ -324,6 +324,40 @@ function assembleGlobalClaudeMd() {
   } catch { /* non-critical */ }
 }
 
+// --- Forbidden-word rules: session-scoped injection ---
+// 룰 목록은 세션 중 바뀌지 않으므로 SessionStart 에서 1회만 주입한다.
+// UserPromptSubmit 훅은 직전 응답 위반 통지만 담당한다 (hooks/forbidden-words-prompt.sh).
+function buildForbiddenWordsContext() {
+  try {
+    const rules = [];
+    const sources = [
+      join(pluginRoot, 'config', 'forbidden-words.json'),
+      join(homedir(), '.claude', 'forbidden-words.local.json'),
+    ];
+    for (const path of sources) {
+      if (!existsSync(path)) continue;
+      try {
+        const parsed = JSON.parse(readFileSync(path, 'utf8'));
+        if (Array.isArray(parsed.rules)) rules.push(...parsed.rules);
+      } catch { /* 손상된 로컬 룰은 무시 */ }
+    }
+    if (rules.length === 0) return '';
+
+    const lines = [
+      '',
+      '[금지 표현 — 어시스턴트 응답에 포함하지 않는다]',
+      '이 룰은 세션 시작 시 1회 주입된다. 출력 직전 패턴 자가 대조는 어시스턴트가 수행한다.',
+      '훅은 응답을 막거나 재작성하지 않으며, 위반이 검출되면 다음 턴에 해당 항목만 통지한다.',
+    ];
+    for (const rule of rules) {
+      lines.push(`  - 패턴 \`${rule.pattern || ''}\` → 대체 \`${rule.replacement || ''}\` (${rule.reason || ''})`);
+    }
+    return lines.join('\n');
+  } catch {
+    return '';
+  }
+}
+
 // --- Sync marketplace metadata to latest remote (prevents stale version path) ---
 function syncMarketplace() {
   try {
@@ -387,10 +421,11 @@ if (identity) {
 }
 
 parts.push(buildSkillContext(provider));
+parts.push(buildForbiddenWordsContext());
 
-const context = parts.join('\n');
+const context = parts.filter(Boolean).join('\n');
 
-// Write context to cache file for PreToolUse hook to read
+// 외부 소비자용 캐시 (어댑터가 세션 컨텍스트를 참조할 수 있도록 유지)
 try {
   const cacheDir = join(opsAgentGlobal, '.cache');
   if (!existsSync(cacheDir)) {
@@ -399,4 +434,13 @@ try {
   writeFileSync(join(cacheDir, 'session-context.txt'), context);
 } catch { /* non-critical */ }
 
-console.log(JSON.stringify({ continue: true }));
+// SessionStart 는 hookSpecificOutput.additionalContext 로 컨텍스트를 전달한다.
+// 이전 구현은 PreToolUse 최상위 additionalContext 로 매 툴 호출마다 재전송했으나,
+// 해당 위치는 지원 필드가 아니어서 실제로는 한 번도 전달되지 않았다.
+console.log(JSON.stringify({
+  continue: true,
+  hookSpecificOutput: {
+    hookEventName: 'SessionStart',
+    additionalContext: context,
+  },
+}));

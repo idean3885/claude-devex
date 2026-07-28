@@ -2,8 +2,10 @@
 /**
  * ops-agent PreToolUse hook
  *
- * 1. 세션 컨텍스트 주입 (기존 기능)
- * 2. 대외비 가드 (GATE 0): 공개 표면 쓰기 명령(gh issue/pr/release, git commit)의
+ * 세션 컨텍스트 주입은 SessionStart 훅(scripts/session-start.mjs)이 담당한다.
+ * 이 훅은 가드 판정만 수행한다.
+ *
+ * 1. 대외비 가드 (GATE 0): 공개 표면 쓰기 명령(gh issue/pr/release, git commit)의
  *    본문·제목·메시지에서 대외비 키워드/패턴 히트 시 하드 차단.
  *
  *    타겟 호스트 인식:
@@ -12,8 +14,8 @@
  *    - 타겟이 `internalHosts` 에 포함되면 `externalOnly` 키워드/패턴은 허용
  *    - `keywords` / `patterns` (루트) 는 타겟 무관 항상 차단 (예: 위키)
  *
- * 3. 도메인 What 추상화 가드: 커밋·PR·이슈 본문의 구현 세부(클래스명·어노테이션·yaml 키 등) 차단.
- * 4. 액션 게이트: 되돌리기 어려운/외부 영향 행위(클러스터 mutation·PR 머지·릴리즈·force push
+ * 2. 도메인 What 추상화 가드: 커밋·PR·이슈 본문의 구현 세부(클래스명·어노테이션·yaml 키 등) 차단.
+ * 3. 액션 게이트: 되돌리기 어려운/외부 영향 행위(클러스터 mutation·PR 머지·릴리즈·force push
  *    ·리소스 삭제)를 세션 명시 허용 전까지 차단. 권한 추측 실행을 기계적으로 차단.
  *    세션 허용: OPS_AGENT_ACTION_GATE_ALLOW=1 또는 action-gate-allow.sh on 마커.
  *    드라이런 OPS_AGENT_ACTION_GATE_DRYRUN=1 · 비활성 OPS_AGENT_ACTION_GATE_DISABLE=1.
@@ -33,10 +35,6 @@ import { scanWhatViolations } from './what-guard-rules.mjs';
 let input = '';
 process.stdin.setEncoding('utf8');
 for await (const chunk of process.stdin) { input += chunk; }
-
-// ─── 세션 컨텍스트 (기존) ───
-const cachePath = join(homedir(), '.claude', 'ops-agent', '.cache', 'session-context.txt');
-const sessionContext = existsSync(cachePath) ? readFileSync(cachePath, 'utf8') : '';
 
 // ─── 대외비 가드 ───
 const DISABLE = process.env.OPS_AGENT_CONFIDENTIAL_DISABLE === '1';
@@ -167,15 +165,13 @@ if (!DISABLE) {
   }
 }
 
-respondContinue(sessionContext);
+respondContinue();
 
 // ─────────────────────────────────────────────
-function respondContinue(context) {
-  if (context) {
-    process.stdout.write(JSON.stringify({ continue: true, additionalContext: context }));
-  } else {
-    process.stdout.write('{"continue":true}');
-  }
+// 세션 컨텍스트는 SessionStart 훅이 1회 주입한다 (scripts/session-start.mjs).
+// 이 훅은 가드 판정만 담당하고, 통과 시 추가 컨텍스트를 싣지 않는다.
+function respondContinue() {
+  process.stdout.write('{"continue":true}');
 }
 
 function runConfidentialGuard(command, cwd) {

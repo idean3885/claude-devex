@@ -4,7 +4,17 @@ README 의 [3. 규칙 자동 적용](../README.md#3-규칙-자동-적용) 에서
 
 ## 표현 가드 룰
 
-금지 표현(과장형 형용사·보고서체·근거 없는 단언·번역투 등)을 응답 출력 직전에 막거나 자동으로 고쳐 쓰지 않습니다. UserPromptSubmit 가 룰을 사전 주입하고, Stop 이 직전 응답 위반을 사후 통지합니다. 따라서 출력 직전 패턴 자가 대조는 어시스턴트의 의무이며, hook 은 이를 돕는 사전 가이드·사후 통지 역할입니다.
+금지 표현(과장형 형용사·보고서체·근거 없는 단언·번역투 등)을 응답 출력 직전에 막거나 자동으로 고쳐 쓰지 않습니다. 출력 직전 패턴 자가 대조는 어시스턴트가 수행하고, hook 은 사전 가이드와 사후 통지를 맡습니다.
+
+주입 주기는 데이터 성격에 맞춥니다. 룰 목록은 세션 중 바뀌지 않으므로 SessionStart 에서 1회만 싣고, 턴마다 달라지는 위반 내역만 UserPromptSubmit 이 통지합니다.
+
+| hook | 시점 | 싣는 것 |
+|------|------|---------|
+| SessionStart (`scripts/session-start.mjs`) | 세션 1회 | 룰 목록 전체 (플러그인 기본 + 사용자 추가 머지) |
+| Stop (`hooks/forbidden-words-stop.sh`) | 응답 종료 시 | 직전 응답 스캔 → 위반을 `.forbidden-violations-pending` 에 기록 |
+| UserPromptSubmit (`hooks/forbidden-words-prompt.sh`) | 위반이 있는 턴만 | pending 내역 통지 후 파일 삭제. 위반이 없으면 무출력 종료 |
+
+세션 컨텍스트(provider·git identity·스킬 트리거)도 같은 경로로 SessionStart 에서 1회 전달됩니다. PreToolUse 는 가드 판정만 담당하며 컨텍스트를 싣지 않습니다.
 
 룰은 `config/style-rules/base/ai-tells.md` 의 카테고리 ID(`taxonomyId`)와 1:1 매핑되어, 패턴이 왜 존재하는지 역추적됩니다.
 
