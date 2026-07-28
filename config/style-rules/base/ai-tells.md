@@ -19,7 +19,7 @@ AI 가 쓴 글의 흔적("AI 티")을 식별·차단·교정하기 위한 분류
 소비자:
 - `ops-agent/hooks/forbidden-words-{prompt,stop}.sh` — `forbidden-words.json` 의 S1 패턴을 사전 가이드로 주입하고 직전 응답 위반을 사후 통지 (출력 차단은 하지 않음)
 - `ops-agent:content-write` / `ops-agent:content-verify` / `ops-agent:content-publish` — 작성·검증·발행 시 base + extension 로드
-- `ops-agent-vault:content-write` / `ops-agent-vault:wiki-publish` — 사내 위키 어댑터. `~/.claude/ops-agent/style-rules/` 미러 경로를 참조
+- 사내 어댑터의 `content-write` · `wiki-publish` — 위키 어댑터. `~/.claude/ops-agent/style-rules/` 미러 경로를 참조
 
 `../metrics/` 와 `../references/` 는 상시 미러 대상이 아니다. 정밀 검증 시에만 참조한다.
 

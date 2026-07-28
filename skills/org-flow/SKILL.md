@@ -250,9 +250,9 @@ clone-on-demand: 레포가 없으면 bare clone → 워크트리 생성. vcs.xml
   "startedAt": "2026-01-01T09:00:00+09:00",
   "repos": {
     "frontend": {
-      "branch": "feature/123",
+      "branch": "feature/NNN",
       "base": "main",
-      "worktree": "worktrees/frontend/feature-123"
+      "worktree": "worktrees/frontend/feature-NNN"
     }
   },
   "pipeline": [],
