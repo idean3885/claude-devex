@@ -6,23 +6,17 @@
 
 - "이슈", "issue"
 
-## Provider 참조 (필수)
+## Provider 참조
 
-**모든 API 호출 전에 반드시 provider 정의 파일을 읽어야 한다.**
+provider 파일에 인증 방식, API endpoint, request body 형식, 필드 보존 규칙이 정의되어 있다. API 호출 전에 읽고 그 정의를 따른다. 추측한 인증 헤더나 endpoint 로 호출하면 트래커마다 실패 양상이 달라 원인 추적이 어려워진다.
 
-1. 로컬 provider 확인: `~/.claude/ops-agent/providers/` 에서 현재 host와 매칭되는 `.md` 파일
-2. 내장 provider 확인: 플러그인 `providers/` 디렉토리
+탐색 순서는 다음과 같다.
+
+1. 로컬 provider: `~/.claude/ops-agent/providers/` 에서 현재 host와 매칭되는 `.md` 파일
+2. 내장 provider: 플러그인 `providers/` 디렉토리
 3. 기본값: `providers/github.md`
 
-**금지사항:**
-- provider 파일을 읽지 않고 API를 호출하는 행위
-- 인증 헤더, endpoint, HTTP method를 추측하는 행위
-- provider에 정의된 것과 다른 방식으로 API를 호출하는 행위
-
-provider 파일에 인증 방식, API endpoint, request body 형식, 필드 보존 규칙이 모두 정의되어 있다.
-**반드시 provider 파일의 정의를 그대로 따라야 한다.**
-
-## 대외비 가드 (GATE 0, 필수)
+## 대외비 가드 (GATE 0)
 
 이슈 관련 모든 텍스트(제목, 본문, 코멘트)는 공개 API로 전송되기 **직전** [../references/confidential-guard.md](../references/confidential-guard.md)의 검증 절차를 통과해야 한다.
 
@@ -46,9 +40,9 @@ provider 파일에 인증 방식, API endpoint, request body 형식, 필드 보�
 이슈를 생성한다.
 
 **워크플로우**:
-1. provider 정의 파일 읽기 (필수)
+1. provider 정의 파일 읽기
 2. 이슈 제목 및 내용 파악 (사용자에게 질문)
-3. **상위-하위 관계 체크** (필수):
+3. **상위-하위 관계 체크**:
    - 상위 이슈가 존재하는지 확인 (사용자에게 질문 또는 컨텍스트에서 파악)
    - 상위 이슈가 있으면 `parentPostId`를 포함하여 하위 이슈로 생성
    - 기존 이슈 조회 시 상위 판단은 API 응답의 `parent` 객체 사용 (`parent.id`, `parent.number`, `parent.subject`)
@@ -64,7 +58,7 @@ provider 파일에 인증 방식, API endpoint, request body 형식, 필드 보�
 이슈 작업을 시작한다. 이슈 번호 또는 URL을 인자로 받는다.
 
 **워크플로우**:
-1. provider 정의 파일 읽기 (필수)
+1. provider 정의 파일 읽기
 2. 이슈 식별 (번호, URL, 또는 사용자에게 질문)
 3. provider의 상태 변경 API로 "진행 중" 전환 (provider의 dedicated API 사용)
 4. 담당자 설정 (provider의 assignee 설정)
@@ -72,7 +66,7 @@ provider 파일에 인증 방식, API endpoint, request body 형식, 필드 보�
 6. **대외비 가드 (GATE 0)**: 위 5에서 생성된 텍스트에 대해 검증. 기존 필드를 수정하는 경우 새로 덧붙이는 텍스트만 검증 대상
 7. provider API로 시작 일시 기록 (본문 추가 또는 코멘트, 기존 필드 보존)
 8. **코드 작업 여부 확인**: "코드 작업이 필요한 이슈입니까?"
-   - **Yes**: provider의 브랜치 패턴으로 브랜치 생성 (반드시 `origin/{base}`에서 분기)
+   - **Yes**: provider의 브랜치 패턴으로 브랜치 생성 (`origin/{base}` 에서 분기)
      - 워크트리 (권장): `git fetch origin && git worktree add ../{프로젝트}-{타입}-{번호} -b {브랜치명} origin/{base}`
      - 직접 체크아웃: `git fetch origin && git checkout -b {브랜치명} origin/{base}`
    - **No**: 브랜치 생성 스킵
@@ -83,7 +77,7 @@ provider 파일에 인증 방식, API endpoint, request body 형식, 필드 보�
 이슈를 완료 처리한다. 이슈 번호 또는 URL을 인자로 받는다.
 
 **워크플로우**:
-1. provider 정의 파일 읽기 (필수)
+1. provider 정의 파일 읽기
 2. 이슈 식별 (번호, URL, 또는 사용자에게 질문)
 3. 작업 결과 정리:
    - 사용자에게 작업 결과 요약 질문
@@ -120,10 +114,10 @@ provider 파일에 인증 방식, API endpoint, request body 형식, 필드 보�
 
 ## 규칙
 
-- **provider 파일을 먼저 읽지 않으면 어떤 API도 호출하지 않는다**
+- provider 파일을 읽고 API 를 호출한다
 - **공개 표면으로 가는 모든 텍스트는 GATE 0 검증 후 송신** ([../references/confidential-guard.md](../references/confidential-guard.md))
 - 이슈 생성/상태 변경은 사용자 승인 후에만
 - 브랜치 생성은 코드 작업 이슈에서만 (사용자 확인)
 - provider 정의에 라벨 자동 생성이 있으면 실행
 - 완료 시 소요 시간은 정수 올림 (8h 초과 허용)
-- 본문 업데이트 시 기존 cc, 태그, 본문 내용을 반드시 보존한다
+- 본문 업데이트 시 기존 cc, 태그, 본문 내용을 보존한다. PUT 은 전체 치환이라 누락분이 사라진다

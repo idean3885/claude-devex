@@ -9,6 +9,7 @@
 > - 저자 톤(T1~T16) → [`tone.md`](./tone.md)
 > - 한국어 구두점(PN1~PN6) → [`punctuation.md`](./punctuation.md)
 > - AI 티 분류(A~K) → [`ai-tells.md`](./ai-tells.md)
+> - 산출물 분량(LN1~LN2) → [`length.md`](./length.md)
 > - 문서 유형별 적용 강도 → [`../extensions/{유형}.md`](../extensions/)
 
 ---
@@ -137,7 +138,7 @@ H1(`#`)은 문서당 하나. 블로그는 front matter `title`, 위키는 `subje
 
 ### H2. 레벨 건너뛰기 금지
 
-H2 → H4처럼 레벨을 건너뛰지 않는다. 반드시 H2 → H3 → H4 순서.
+H2 → H4처럼 레벨을 건너뛰지 않는다. H2 → H3 → H4 순서를 지킨다.
 
 > **근거**: WCAG 1.3.1 — 스크린 리더 사용자가 헤딩 레벨로 문서 구조를 파악한다.
 
@@ -398,3 +399,4 @@ A~K 항목은 `ai-tells.md` 분류 SSOT를 본다.
 | T1~T16 | 저자 톤 | — | `tone.md` 참조 |
 | PN1~PN6 | 한국어 구두점 | — | `punctuation.md` 참조 |
 | A~K | AI 티 분류 | — | `ai-tells.md` 참조 |
+| LN1~LN2 | 산출물 분량 | — | `length.md` 참조 (톤·AI 티 교정 후 마지막에 적용) |

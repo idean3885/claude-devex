@@ -13,7 +13,7 @@ advisor 엔진이 참조하는 방법론 골격이다. **구조와 규칙(사상
 
 ## 파일링 규칙
 
-- 항목은 반드시 한 버킷에만 둔다. 애매하면 "지금 실행 대상인가(Project) / 유지 책임인가(Area) / 참고인가(Resource)" 순으로 판별.
+- 항목은 한 버킷에만 둔다. 애매하면 "지금 실행 대상인가(Project) / 유지 책임인가(Area) / 참고인가(Resource)" 순으로 판별.
 - Project가 끝나면 산출물은 Resource로, 프로젝트 기록은 Archive로 옮긴다.
 - Area는 주기적으로 검토해 새 Project를 파생시킬 수 있다.
 - 버킷 경로는 소비 프로젝트의 direction profile `para.buckets`가 정한다. 이 문서는 경로를 강제하지 않는다.

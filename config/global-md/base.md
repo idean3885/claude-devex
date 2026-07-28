@@ -17,9 +17,18 @@ ops-agent 의 `config/style-rules/{base,extensions}/` 가 모든 한국어 문�
 | `base/readability.md` | 구조 가독성 (P/H/L/C/V/K/B) |
 | `base/tone.md` | 저자 톤 (T1~T13) |
 | `base/punctuation.md` | 한국어 구두점 (PN1~PN6) |
+| `base/length.md` | 산출물 분량 (LN1~LN2) |
 | `extensions/{blog,wiki,poc,info,knowledge,issue,dailylog,peer-review,work-review}.md` | 문서 유형별 추가 규칙 |
 
 표현 가드 hook(`forbidden-words.json`)은 응답을 막거나 재작성하지 않는다. 룰 목록은 SessionStart 에서 세션당 1회 주입되고, Stop 이 검출한 위반만 다음 턴에 통지된다. 출력 직전 패턴 자가 대조는 어시스턴트가 수행한다. 사용자 추가 룰은 `~/.claude/forbidden-words.local.json` 에 작성하면 머지된다. hook 동작 상세는 ops-agent `docs/hooks-config.md` 참조.
+
+## 어시스턴트 발화 분량
+
+문서 분량은 `base/length.md`, 대화 발화는 여기. 작업 강도(effort)를 낮춰도 발화 길이는 줄지 않는다.
+
+- **응답**: 본론이 대부분을 차지한다. 단서·주의는 짧게. 설명 요청에는 요약 먼저, 깊이는 요청받았을 때
+- **진행 서술**: 첫 도구 호출 전 한 문장. 작업 중에는 중요한 발견·방향 전환만. 마칠 때 결과를 첫 문장에
+- **정정**: 사용자의 코드·판단·결정이 달라지는 오류만. 짧게 고치고 진행. 결과가 같은 실수는 조용히
 
 ## ops-agent 개발 룰
 
