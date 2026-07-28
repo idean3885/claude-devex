@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.7.0] - 2026-07-28
+
+### Fixed
+- refactor: 과검증 스캐폴딩 제거, 서브 에이전트 위임 상한 전환, 작업 강도 정책 추가
+
 ## [6.6.0] - 2026-07-28
 
 ### Fixed

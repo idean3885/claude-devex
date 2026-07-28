@@ -120,3 +120,7 @@ ccusage session --since {task.startedAt as YYYYMMDD} --json --breakdown
 ```
 
 리포트 전체 내용도 함께 출력합니다.
+
+## 관련
+
+리포트 값이 예상보다 크면 다음 같은 유형의 작업에서 작업 강도를 한 단계 낮춰 본다. 품질이 유지되면 그 단계를 새 기본값으로 삼는다 — [docs/effort-policy.md](../../docs/effort-policy.md).

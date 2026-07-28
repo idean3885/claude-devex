@@ -100,3 +100,7 @@ Output:
 `cwd` 가 bindings 에 포함되어야 worktree-per-task 환경에서 ticket 단위 분리가 동작한다.
 상세는 [docs/usage-cwd-aggregation.md](../../docs/usage-cwd-aggregation.md) 참조.
 ```
+
+## 관련
+
+이 스킬은 소비량을 사후에 기록한다. 사전에 조절하려면 작업 강도(effort)를 쓴다 — [docs/effort-policy.md](../../docs/effort-policy.md).
