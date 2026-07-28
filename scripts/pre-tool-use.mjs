@@ -30,8 +30,8 @@
  * 비활성: OPS_AGENT_CONFIDENTIAL_DISABLE=1 설정 시 가드 전체 스킵
  */
 import { execSync } from 'child_process';
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
 import { homedir } from 'os';
 import { scanWhatViolations, snippet } from './what-guard-rules.mjs';
 
@@ -65,6 +65,8 @@ const ARGOCD_WRITE = new Set([
 const HELM_WRITE = new Set(['install', 'upgrade', 'uninstall', 'delete', 'rollback']);
 // 커밋 diff 검사 상한 (같은 TDZ 사유로 상단 선언)
 const DIFF_SCAN_LIMIT = 256 * 1024;
+// 레포 공개 여부 캐시 유효 기간. 공개 전환은 드물고, 만료 시 재조회한다.
+const VISIBILITY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const VALUE_FLAGS = new Set([
   '-n', '--namespace', '--context', '--cluster', '--user', '--kubeconfig',
   '-o', '--output', '-l', '--selector', '--field-selector', '-f', '--filename',
@@ -85,12 +87,21 @@ if (!DISABLE) {
         const header = DRYRUN ? '[ops-agent 대외비 가드 · 드라이런]' : '[ops-agent 대외비 가드 · 차단]';
         const hitLines = result.hits.map(h =>
           `  - "${h.keyword}" (${h.source}): ${h.context}`).join('\n');
+        const scope = result.target ? result.target.scope : 'public';
+        const what = scope === 'internal'
+          ? '사내 공유 표면 쓰기에서 개인 환경 흔적 히트'
+          : '공개 표면 쓰기에서 대외비 히트';
         const targetInfo = result.target
-          ? `\n타겟: ${result.target.scope} (${result.target.reason})`
+          ? `\n표면: ${scope} (${result.target.reason})`
           : '';
-        const msg = `${header} 공개 표면 쓰기 명령에서 대외비 히트:${targetInfo}\n${hitLines}\n\n` +
+        const scopeHint = scope === 'internal'
+          ? `개인 인프라·부트스트랩 세부는 본인 공간에만 남긴다. 규칙 목록: 설정의 personalDevOnly\n`
+          : `비공개 저장소면 표면이 private 로 잡혀야 한다. 잘못 잡혔으면 캐시를 확인한다:\n` +
+            `  ~/.claude/ops-agent/cache/repo-visibility.json\n`;
+        const msg = `${header} ${what}:${targetInfo}\n${hitLines}\n\n` +
           `해결: 본문·제목·메시지 또는 커밋 대상 파일에서 해당 키워드 제거 후 재시도.\n` +
           `커밋 대상 diff 는 추가된 줄만 검사한다. 키워드를 정당하게 다루는 경로는 설정의 allowPaths 로 제외.\n` +
+          scopeHint +
           `허용 리스트 조정: ~/.claude/ops-agent/confidential-keywords.local.json`;
         if (DRYRUN) {
           process.stderr.write(msg + '\n');
@@ -245,20 +256,23 @@ function runConfidentialGuard(command, cwd) {
     return { blocked: false, hits: [], diffTruncated };
   }
 
-  // 타겟 결정 — internal 이면 externalOnly 규칙은 스킵
+  // 표면 판정 — public · private · internal
   const target = resolveTarget(command, cwd, cfg.internalHosts);
 
-  // 항상 차단되는 규칙 (위키 등 존재 자체가 대외비인 키워드)
+  // 항상 차단되는 규칙 (존재 자체가 대외비인 키워드)
   const alwaysRules = { keywords: cfg.keywords, patterns: cfg.patterns };
-  // external 타겟에만 차단되는 규칙 (사내 인프라 참조 — 사내 작업엔 허용)
-  const externalRules = target.scope === 'external'
-    ? { keywords: cfg.externalOnly.keywords, patterns: cfg.externalOnly.patterns }
-    : { keywords: [], patterns: [] };
+  // 표면별 추가 규칙. private 는 본인 비공개 공간이라 추가 규칙이 없다.
+  let surfaceRules = { keywords: [], patterns: [] };
+  if (target.scope === 'public') {
+    surfaceRules = cfg.externalOnly;                 // 사내 → 공개 (대외비 위반)
+  } else if (target.scope === 'internal') {
+    surfaceRules = cfg.personalDevOnly;              // 개인 → 사내 (개인 환경 노출)
+  }
 
   const hits = [];
   for (const t of texts) {
     collectHits(t, alwaysRules.keywords, alwaysRules.patterns, hits);
-    collectHits(t, externalRules.keywords, externalRules.patterns, hits);
+    collectHits(t, surfaceRules.keywords, surfaceRules.patterns, hits);
   }
 
   return { blocked: hits.length > 0, hits, target, diffTruncated };
@@ -383,31 +397,37 @@ function extractCwdFromCommand(command, fallbackCwd) {
   return fallbackCwd;
 }
 
+// 표면은 셋이다. 호스트만 보면 둘로만 갈라져 비공개 저장소가 공개 표면으로 오판된다.
+//
+//   internal — 사내 호스트. 개인 환경 흔적(personalDevOnly)을 막는다.
+//   public   — 사내 호스트 아님 + 공개 확인. 사내 용어(externalOnly)를 막는다.
+//   private  — 사내 호스트 아님 + 비공개 확인. 본인 비공개 공간이므로 양쪽 다 통과.
+//
+// 두 방향을 같은 강도로 막는다. 사내 → public 은 대외비 위반이고,
+// 개인 → internal 은 개인 환경이 사내 공유 표면에 드러나는 문제다.
 function resolveTarget(command, cwd, internalHosts) {
   const hosts = internalHosts || [];
   const effectiveCwd = extractCwdFromCommand(command, cwd);
+  const isInternalHost = host => hosts.some(h => host === h || host.endsWith('.' + h));
+
   // 1. gh 명령: GH_HOST 환경 변수 접두어 우선
   const ghHostMatch = command.match(/\bGH_HOST=([^\s'"]+)/);
+  const ghRepoMatch = command.match(/\bgh\s+\S+[^&|;]*?\s(?:-R|--repo)[\s=]+["']?([^\s"']+)/);
+  const repoArg = ghRepoMatch ? ghRepoMatch[1].split('/') : null;
+
   if (ghHostMatch) {
     const host = ghHostMatch[1];
-    if (hosts.some(h => host === h || host.endsWith('.' + h))) {
-      return { scope: 'internal', reason: `GH_HOST=${host}` };
-    }
-    return { scope: 'external', reason: `GH_HOST=${host}` };
+    if (isInternalHost(host)) return { scope: 'internal', reason: `GH_HOST=${host}` };
+    // -R owner/repo 가 함께 오면 슬러그를 만들 수 있다.
+    const slug = repoArg && repoArg.length === 2 ? `${host}/${repoArg.join('/')}` : null;
+    return classifyExternal(slug, `GH_HOST=${host}`, host);
   }
 
   // 2. gh -R 에 호스트가 붙은 형태 (host/owner/repo)
-  const ghRepoMatch = command.match(/\bgh\s+\S+[^&|;]*?\s(?:-R|--repo)[\s=]+["']?([^\s"']+)/);
-  if (ghRepoMatch) {
-    const parts = ghRepoMatch[1].split('/');
-    // host/owner/repo 3단이면 첫 단이 호스트. owner/repo 2단은 호스트 정보가 없다.
-    if (parts.length >= 3) {
-      const host = parts[0];
-      if (hosts.some(h => host === h || host.endsWith('.' + h))) {
-        return { scope: 'internal', reason: `-R host=${host}` };
-      }
-      return { scope: 'external', reason: `-R host=${host}` };
-    }
+  if (repoArg && repoArg.length >= 3) {
+    const host = repoArg[0];
+    if (isInternalHost(host)) return { scope: 'internal', reason: `-R host=${host}` };
+    return classifyExternal(repoArg.slice(0, 3).join('/'), `-R host=${host}`, host);
   }
 
   // 3. gh (호스트 미지정) · git commit: 레포 리모트로 판정한다.
@@ -418,27 +438,122 @@ function resolveTarget(command, cwd, internalHosts) {
   // 사내·개인 계정을 함께 쓰는 머신에서는 항상 사내로 판정되어 externalOnly 규칙이
   // 통째로 건너뛰어졌다. 퍼블릭 레포 대상 명령이 사내 용어를 통과시키는 fail-open 이었다.
   if (/\bgh\s+(issue|pr|release)\b/.test(command) || /\bgit\s+commit\b/.test(command)) {
+    let url = '';
     try {
-      const url = execSync('git remote get-url origin 2>/dev/null', {
+      url = execSync('git remote get-url origin 2>/dev/null', {
         cwd: effectiveCwd, encoding: 'utf8', timeout: 2000,
       }).trim();
-      if (!url) {
-        return { scope: 'external', reason: `origin remote 없음 (cwd=${effectiveCwd})` };
-      }
-      for (const host of hosts) {
-        if (url.includes(host)) {
-          return { scope: 'internal', reason: `origin remote=${host}` };
-        }
-      }
-      return { scope: 'external', reason: `origin remote 외부: ${url.substring(0, 60)}` };
     } catch {
-      // 판별 불가는 external 로 닫는다. 대외비 가드에서 fail-open 은 방향이 거꾸로다.
-      return { scope: 'external', reason: `origin remote 조회 실패 (cwd=${effectiveCwd})` };
+      // 판별 불가는 public 으로 닫는다. 대외비 가드에서 fail-open 은 방향이 거꾸로다.
+      return { scope: 'public', reason: `origin remote 조회 실패 (cwd=${effectiveCwd})` };
     }
+    if (!url) return { scope: 'public', reason: `origin remote 없음 (cwd=${effectiveCwd})` };
+
+    const parsed = parseRemote(url);
+    if (parsed && isInternalHost(parsed.host)) {
+      return { scope: 'internal', reason: `origin remote=${parsed.host}` };
+    }
+    // 리모트 URL 이 파싱되지 않아도 사내 호스트 문자열이 들어 있으면 사내로 본다.
+    for (const host of hosts) {
+      if (url.includes(host)) return { scope: 'internal', reason: `origin remote=${host}` };
+    }
+    return classifyExternal(parsed && parsed.slug, `origin remote=${url.substring(0, 60)}`, parsed && parsed.host);
   }
 
-  // 4. 기본값: 안전하게 external
-  return { scope: 'external', reason: '타겟 미확인' };
+  // 4. 기본값: 안전하게 public
+  return { scope: 'public', reason: '타겟 미확인' };
+}
+
+// 사내 호스트가 아닌 대상의 공개 여부를 판정한다.
+// 슬러그를 못 만들거나 조회가 실패하면 public 으로 닫는다.
+function classifyExternal(slug, reason, host) {
+  if (!slug) return { scope: 'public', reason: `${reason} · 레포 식별 불가` };
+  const vis = lookupVisibility(slug, host);
+  if (vis === 'PRIVATE' || vis === 'INTERNAL') {
+    return { scope: 'private', reason: `${reason} · 비공개(${vis})` };
+  }
+  if (vis === 'PUBLIC') return { scope: 'public', reason: `${reason} · 공개` };
+  return { scope: 'public', reason: `${reason} · 공개 여부 미확인` };
+}
+
+// git 리모트 URL 에서 host 와 owner/repo 를 뽑는다.
+// scp 형태(git@host:owner/repo)와 URL 형태 양쪽을 받는다.
+function parseRemote(url) {
+  const scp = url.match(/^[^@/]+@([^:/]+):(.+?)(?:\.git)?\/?$/);
+  if (scp) {
+    const path = scp[2].replace(/^\/+/, '');
+    return path.split('/').length >= 2 ? { host: scp[1], slug: `${scp[1]}/${path}` } : null;
+  }
+  const m = url.match(/^[a-z+]+:\/\/(?:[^@/]+@)?([^:/]+)(?::\d+)?\/(.+?)(?:\.git)?\/?$/i);
+  if (m) {
+    const path = m[2].replace(/^\/+/, '');
+    return path.split('/').length >= 2 ? { host: m[1], slug: `${m[1]}/${path}` } : null;
+  }
+  return null;
+}
+
+// 공개 여부 조회 결과를 레포 단위로 캐시한다.
+//
+// 조회는 `gh repo view` 네트워크 왕복이라 수백 ms 가 붙는다. 이 훅은 매 Bash 호출마다
+// 돌지만 조회는 커밋·이슈·PR·릴리즈에만, 그리고 레포당 최초 1회만 일어난다.
+//
+// 캐시 파일은 저장소 단위 예외를 표현하는 수단도 된다. 조회가 안 되는 환경에서는
+// 항목을 직접 넣어 고정할 수 있고, allowPaths 와 달리 다른 저장소로 새지 않는다.
+function lookupVisibility(slug, host) {
+  const cache = readVisibilityCache();
+  const entry = cache.entries[slug];
+  const now = nowMs();
+  if (entry && typeof entry.checkedAt === 'number' && now - entry.checkedAt < VISIBILITY_TTL_MS) {
+    return entry.visibility;
+  }
+
+  // slug 은 host/owner/repo 형태. gh 는 -R 에 그 형태를 그대로 받는다.
+  let vis = null;
+  try {
+    const out = execSync(`gh repo view ${shellQuote(slug)} --json visibility --jq .visibility`, {
+      encoding: 'utf8', timeout: 6000, stdio: ['ignore', 'pipe', 'ignore'],
+      env: { ...process.env, GH_HOST: host || '' },
+    }).trim();
+    if (/^(PUBLIC|PRIVATE|INTERNAL)$/.test(out)) vis = out;
+  } catch { /* 조회 실패는 미확인으로 둔다 */ }
+
+  cache.entries[slug] = { visibility: vis, checkedAt: now };
+  writeVisibilityCache(cache);
+  return vis;
+}
+
+function visibilityCachePath() {
+  return process.env.OPS_AGENT_VISIBILITY_CACHE_PATH
+    || join(homedir(), '.claude', 'ops-agent', 'cache', 'repo-visibility.json');
+}
+
+function readVisibilityCache() {
+  const p = visibilityCachePath();
+  if (!existsSync(p)) return { entries: {} };
+  try {
+    const raw = JSON.parse(readFileSync(p, 'utf8'));
+    return raw && typeof raw.entries === 'object' && raw.entries ? raw : { entries: {} };
+  } catch {
+    return { entries: {} };
+  }
+}
+
+function writeVisibilityCache(cache) {
+  const p = visibilityCachePath();
+  try {
+    mkdirSync(dirname(p), { recursive: true });
+    writeFileSync(p, JSON.stringify(cache, null, 2));
+  } catch { /* 캐시 실패는 판정에 영향을 주지 않는다 */ }
+}
+
+// Date.now 를 함수로 감싼다. 테스트에서 TTL 만료를 고정 시각으로 재현하기 위함.
+function nowMs() {
+  const forced = Number(process.env.OPS_AGENT_NOW_MS);
+  return Number.isFinite(forced) && forced > 0 ? forced : Date.now();
+}
+
+function shellQuote(s) {
+  return `'${String(s).replace(/'/g, `'\\''`)}'`;
 }
 
 function loadConfig() {
@@ -447,6 +562,7 @@ function loadConfig() {
   const empty = {
     keywords: [], patterns: [],
     externalOnly: { keywords: [], patterns: [] },
+    personalDevOnly: { keywords: [], patterns: [] },
     internalHosts: [], allowPaths: [],
   };
   if (!existsSync(cfgPath)) return empty;
@@ -458,6 +574,12 @@ function loadConfig() {
       externalOnly: {
         keywords: toStringArray(raw.externalOnly && raw.externalOnly.keywords),
         patterns: toRegexArray(raw.externalOnly && raw.externalOnly.patterns),
+      },
+      // 사내 공유 표면에 개인 환경 흔적이 드러나는 것을 막는 규칙.
+      // 방향만 반대이고 강도는 externalOnly 와 같다.
+      personalDevOnly: {
+        keywords: toStringArray(raw.personalDevOnly && raw.personalDevOnly.keywords),
+        patterns: toRegexArray(raw.personalDevOnly && raw.personalDevOnly.patterns),
       },
       internalHosts: toStringArray(raw.internalHosts),
       // 커밋 diff 검사에서 제외할 경로 정규식. 키워드를 정당하게 다루는 문서·설정용.
@@ -487,7 +609,9 @@ function isEmptyConfig(cfg) {
   return cfg.keywords.length === 0
     && cfg.patterns.length === 0
     && cfg.externalOnly.keywords.length === 0
-    && cfg.externalOnly.patterns.length === 0;
+    && cfg.externalOnly.patterns.length === 0
+    && cfg.personalDevOnly.keywords.length === 0
+    && cfg.personalDevOnly.patterns.length === 0;
 }
 
 function extractOption(command, name, out) {
