@@ -167,17 +167,7 @@ ops-agent:content-verify가 수행하는 검증 (ops-agent:content-write는 관�
 3. 한국어 구두점 검증 (쉼표·콜론·세미콜론 규범, PN1-PN6)
 4. 위반 항목 즉시 교정
 
-ops-agent:content-verify(inline)는 교정된 본문을 반환합니다.
-
-#### verify 결과 검증 (CHECKPOINT)
-
-ops-agent:content-verify(inline) 완료 후 아래 항목을 확인합니다.
-**하나라도 실패 시 본문을 반환하지 않습니다.**
-
-- [ ] 리더빌리티 필수(●) 규칙 위반 0건
-- [ ] "저는/나는" 본문 내 0회
-- [ ] 한다체 문장 0건
-- [ ] 세미콜론(`;`) 본문 내 0회 (코드 블록 제외)
+ops-agent:content-verify(inline)는 교정된 본문을 반환합니다. 반환된 본문을 그대로 다음 Phase 로 넘깁니다.
 
 ### Phase 4: 메타데이터 프레임워크
 
