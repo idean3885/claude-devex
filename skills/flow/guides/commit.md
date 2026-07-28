@@ -96,7 +96,7 @@
 ```
 - XxxUserService 도입 — 잠금 → validate → INSERT → record → publish
 - XxxEventListener AFTER_COMMIT + XxxDelegationService REQUIRES_NEW
-- XxxDelegationPort + Adapter — k8s-delegator /api/v1/xxx
+- XxxDelegationPort + Adapter — 외부 시스템 /api/v1/xxx
 - application-{x}.yml 의 {x}.{y}.callback-base-url 추가
 ```
 

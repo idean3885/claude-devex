@@ -7,7 +7,7 @@
 `org-flow` 는 한 ticket 당 한 worktree 를 표준으로 한다 (`worktrees/<repo>/feature-<n>/`). 그러나 Claude Code 는 trace jsonl 파일을 cwd 와 무관하게 **부모 프로젝트 디렉토리 한 곳**에 저장한다.
 
 ```
-cwd: /Users/<user>/git-project/<org>/worktrees/<repo>/feature-1234/
+cwd: /Users/<user>/git-project/<org>/worktrees/<repo>/feature-NNN/
                             ↓
 trace 저장: ~/.claude/projects/-Users-<user>-git-project-<org>/<sessionUuid>.jsonl
 ```
@@ -19,7 +19,7 @@ trace 저장: ~/.claude/projects/-Users-<user>-git-project-<org>/<sessionUuid>.j
 trace jsonl 의 entry 마다 실제 `cwd` 필드가 자동 기록된다. 워크트리 path 가 그대로 보존된다.
 
 ```json
-{"type":"assistant","cwd":"/Users/<user>/git-project/<org>/worktrees/<repo>/feature-1234",
+{"type":"assistant","cwd":"/Users/<user>/git-project/<org>/worktrees/<repo>/feature-NNN",
  "timestamp":"2026-05-19T05:11:27Z","sessionId":"3012248b-...",
  "message":{"usage":{"input_tokens":6,"output_tokens":213,
                      "cache_creation_input_tokens":31870,"cache_read_input_tokens":18276}}}
@@ -95,9 +95,9 @@ for tid, v in agg.items():
 ```json
 "bindings": [
   {
-    "cwd": "/Users/<user>/git-project/<org>/worktrees/<repo>/feature-1234",
+    "cwd": "/Users/<user>/git-project/<org>/worktrees/<repo>/feature-NNN",
     "project": "-Users--user--git-project--org",
-    "branch": "feature/1234"
+    "branch": "feature/NNN"
   }
 ]
 ```
