@@ -27,6 +27,7 @@ import { readFileSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import {
   loadConfig, isEmptyConfig, parseRemote, lookupVisibility, lookupSelfOwners, shellQuote,
+  findKeywordHits, boundaryApplicable,
 } from './confidential-rules.mjs';
 
 // 바이너리 확장자. 확장자만 믿지 않고 NUL 바이트 검사를 함께 한다 —
@@ -207,6 +208,7 @@ function scanRepo(dir, cfg, opts) {
     .map(e => ({
       ruleId: e.rule.id, len: e.rule.len, kind: e.rule.kind,
       boundaryApplicable: e.rule.boundaryApplicable === true,
+      wordBoundary: e.rule.wordBoundary === true, ignoreCase: e.rule.ignoreCase === true,
       total: e.total, standalone: e.standalone, substring: e.substring,
       files: [...e.files.entries()].map(([p, c]) => ({ path: p, count: c }))
         .sort((a, b) => b.count - a.count || a.path.localeCompare(b.path)),
@@ -230,10 +232,10 @@ function buildRules(cfg, surface) {
     items.forEach((v, i) => {
       rules.push(kind === 'keyword'
         ? {
-            id: `${group}.keywords[${i}]`, kind, len: v.length, value: v,
-            // 단어 경계 판정은 ASCII 식별자에만 의미가 있다. 한글 키워드는 앞뒤가 한글이라
-            // 경계 문자 검사를 늘 통과해서 전부 standalone 으로 보인다 — 판정하지 않는다.
-            boundaryApplicable: /^[A-Za-z0-9_]+$/.test(v),
+            id: `${group}.keywords[${i}]`, kind, len: v.value.length, kw: v,
+            // 경계 판정 적용 여부는 공유 매처와 같은 기준을 쓴다.
+            boundaryApplicable: boundaryApplicable(v),
+            wordBoundary: v.wordBoundary, ignoreCase: v.ignoreCase,
           }
         : { id: `${group}.patterns[${i}]`, kind, len: v.source.length, regex: v });
     });
@@ -253,13 +255,7 @@ function buildRules(cfg, surface) {
 function scanText(text, rel, rules, agg) {
   for (const rule of rules) {
     if (rule.kind === 'keyword') {
-      let idx = text.indexOf(rule.value);
-      while (idx !== -1) {
-        record(agg, rule, rel, rule.boundaryApplicable
-          ? isStandalone(text, idx, rule.value.length)
-          : null);
-        idx = text.indexOf(rule.value, idx + rule.value.length);
-      }
+      for (const h of findKeywordHits(text, rule.kw)) record(agg, rule, rel, h.standalone);
     } else {
       const re = new RegExp(rule.regex.source, rule.regex.flags.includes('g')
         ? rule.regex.flags : rule.regex.flags + 'g');
@@ -271,19 +267,6 @@ function scanText(text, rel, rules, agg) {
       }
     }
   }
-}
-
-/**
- * 단어 경계 판정. 앞뒤 문자가 식별자 문자면 부분 문자열 일치로 본다.
- *
- * 짧은 키워드는 다른 단어 안에 우연히 들어간다. 합계만 보면 그 부분 일치가
- * 실제 노출로 보여서 우선순위가 뒤집힌다.
- */
-function isStandalone(text, idx, len) {
-  const before = idx > 0 ? text[idx - 1] : '';
-  const after = idx + len < text.length ? text[idx + len] : '';
-  const wordChar = c => c !== '' && /[A-Za-z0-9_]/.test(c);
-  return !wordChar(before) && !wordChar(after);
 }
 
 function record(agg, rule, rel, standalone) {
@@ -308,7 +291,7 @@ function scanHistory(root, rules) {
   const out = [];
   for (const rule of rules) {
     if (rule.kind !== 'keyword') continue;
-    const raw = gitOutput(root, `log --oneline --all -S${shellQuote(rule.value)}`);
+    const raw = gitOutput(root, `log --oneline --all -S${shellQuote(rule.kw.value)}`);
     const commits = raw ? raw.split('\n').filter(Boolean).length : 0;
     if (commits > 0) out.push({ ruleId: rule.id, len: rule.len, commits });
   }
@@ -334,7 +317,8 @@ function gitOutput(cwd, args) {
 // ─── 출력 ───
 
 function ruleValues(cfg) {
-  return [...cfg.keywords, ...cfg.externalOnly.keywords, ...cfg.personalDevOnly.keywords];
+  return [...cfg.keywords, ...cfg.externalOnly.keywords, ...cfg.personalDevOnly.keywords]
+    .map(k => k.value);
 }
 
 /**
@@ -421,7 +405,9 @@ function renderRepo(lines, r, opts, values) {
       if (rule.kind !== 'keyword') cls = '패턴 (경계 분류 없음)';
       else if (!rule.boundaryApplicable) cls = '경계 분류 불가 (비 ASCII 키워드)';
       else cls = `standalone ${rule.standalone} · substring ${rule.substring}`;
-      lines.push(`      ${rule.ruleId}  len ${rule.len}  hits ${rule.total}  ${cls}`);
+      const opt = rule.kind === 'keyword'
+        ? ` [wb=${rule.wordBoundary ? 'on' : 'off'} ic=${rule.ignoreCase ? 'on' : 'off'}]` : '';
+      lines.push(`      ${rule.ruleId}  len ${rule.len}  hits ${rule.total}  ${cls}${opt}`);
       for (const f of rule.files) lines.push(`        ${redactPath(f.path, values)} (${f.count})`);
     }
   }

@@ -19,12 +19,18 @@
   "patterns": [
     "^[a-z]+Id\\s*[:=]\\s*\\d{15,}"
   ],
+  "$keywordOptions": {
+    "$comment": "키워드는 문자열 또는 { value, wordBoundary, ignoreCase } 객체로 쓴다.",
+    "wordBoundary": "ASCII 3글자 이하면 기본 on. 다른 식별자 안에 묻힌 등장을 히트로 세지 않는다",
+    "ignoreCase": "기본 off. 켜면 대소문자 표기형을 따로 등록할 필요가 없다",
+    "$hangul": "경계 문자 집합은 [0-9A-Za-z_] 이고 한글은 넣지 않는다. 한글을 넣으면 조사가 붙은 정상 등장(Foo를)이 통과해 미탐이 된다. 따라서 한글만으로 된 키워드에는 경계 옵션이 무력하다 — 오탐이면 목록에서 뺀다."
+  },
   "externalOnly": {
     "$comment": "공개 표면에서만 막는다. 사내 작업에는 정상적으로 쓰는 용어. 사내 → 공개 방향.",
     "keywords": [
       "{조직 내부 시스템명}",
-      "{내부 프로젝트 코드네임}",
-      "{사내 플랫폼·제품명}"
+      { "value": "{짧은 약어}", "wordBoundary": true },
+      { "value": "{표기형이 여러 개인 제품명}", "ignoreCase": true }
     ],
     "patterns": [
       "{사내 트래커 번호 형태}"
