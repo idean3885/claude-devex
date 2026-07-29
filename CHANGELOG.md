@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.14.0] - 2026-07-30
+
+### Fixed
+- feat: 외부 서비스 인증 만료 시 재인증 요청 플로우 문서화 (docs/external-auth.md). 토큰 발급 대신 정식 인증 명령을 제시하고, 스코프 밖 작업은 콘솔 작업으로 안내한다
+
 ## [6.13.0] - 2026-07-30
 
 ### Fixed
