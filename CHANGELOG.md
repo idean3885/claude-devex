@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.12.0] - 2026-07-30
+
+### Fixed
+- feat: 레포 전수 대외비 스캔 명령 추가 (confidential-scan.mjs). 규칙 로딩·표면 판정을 confidential-rules.mjs 로 분리해 가드와 공유. 값 비출력 강제, 바이너리·단어 경계 오탐 억제, 외부 소유 레포 구분
+
 ## [6.11.2] - 2026-07-29
 
 ### Fixed
