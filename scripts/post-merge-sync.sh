@@ -55,23 +55,58 @@ if [ -d "$NEW_CACHE" ] && [ ! -d "$NEW_CACHE/.git" ]; then
   echo "✔ 캐시 git 복원 ($NEW_VERSION)"
 fi
 
-# --- Step 2b: update 가 제거한 옛 버전 경로를 신버전 심볼릭으로 복원 ---
-# 활성 세션의 PreToolUse / SessionStart hook 은 시작 시점에 결정된 plugin root 경로(옛 버전)를 계속 호출한다.
-# update 가 옛 버전 디렉토리를 제거하면 그 경로가 ENOENT 가 되어 활성 세션 hook 이 실패한다.
-# 그래서 update 직전 캡처한 BEFORE_VERSIONS 를 기준으로, 사라진 옛 버전 이름마다 신버전을 가리키는
-# 심볼릭을 만들어 활성 세션 hook 경로를 유지한다. 다음 hook 호출이 신버전 코드를 해소하므로 reload 가 필요 없다.
-# (관련 회귀: 활성 세션 중 릴리스 직후 'Plugin directory does not exist' 에러.)
+# --- Step 2b: 신버전보다 낮은 버전 경로를 신버전 심볼릭으로 맞춘다 ---
+# 활성 세션의 PreToolUse / SessionStart hook 은 시작 시점에 결정된 plugin root 경로(옛 버전)를
+# 계속 호출한다. 그 경로가 사라지면 hook 이 ENOENT 로 실패하고, 옛 실디렉토리로 남아 있으면
+# 세션이 끝날 때까지 옛 코드가 돈다.
+#
+# 이 스크립트는 안전장치(대외비 가드·액션 게이트) 코드를 배치한다. 옛 경로 잔존은 곧 옛 가드
+# 잔존이다. 실제로 가드를 두 번 고친 뒤에도 옛 경로에는 첫 결함이 남아 있었다. 버전 표시는
+# 최신인데 검사는 고쳐지기 전 코드가 수행하고 있었다.
+#
+# 그래서 판정 기준은 존재 형태(심볼릭인가)가 아니라 버전 비교다. session-start.mjs 의
+# cleanupStaleVersions() 가 같은 기준을 쓰지만 다음 세션에만 적용된다. 이 단계는 머지 직후
+# 그 자리에서 맞춘다.
+
+# "1.2.3" → 비교 가능한 정수 키. 각 자리 1000 미만 전제 (VERSION 컨벤션).
+# macOS 기본 sort 에 -V 가 없어 자리별로 직접 만든다.
+semver_key() {
+  local major minor patch
+  IFS=. read -r major minor patch <<< "$1"
+  printf '%d%03d%03d\n' "$((10#${major:-0}))" "$((10#${minor:-0}))" "$((10#${patch:-0}))"
+}
+
+NEW_KEY=$(semver_key "$NEW_VERSION")
+# update 가 제거한 이름(BEFORE)과 남긴 이름(현재 목록)이 모두 대상이다. 한쪽만 보면 누락된다.
+CANDIDATES=$(printf '%s\n%s\n' "$BEFORE_VERSIONS" "$(ls -1 "$CACHE_BASE" 2>/dev/null || true)" \
+  | grep -v '^$' | sort -u || true)
+
 RESTORED=0
-for OLD_NAME in $BEFORE_VERSIONS; do
+for OLD_NAME in $CANDIDATES; do
   [ "$OLD_NAME" = "$NEW_VERSION" ] && continue
+  # 버전 디렉토리가 아니면(워크트리·개발 경로) 비교 기준이 없다. 건드리지 않는다.
+  [[ "$OLD_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
+  # 신버전보다 높으면 보존한다. 다른 세션이 상위 버전을 쓰는 중일 수 있다.
+  [ "$(semver_key "$OLD_NAME")" -gt "$NEW_KEY" ] && continue
+
   TARGET="$CACHE_BASE/$OLD_NAME"
-  # update 가 옛 버전을 실제 디렉토리로 그대로 남겨 두었다면(누적형) 건드리지 않는다.
-  [ -e "$TARGET" ] && [ ! -L "$TARGET" ] && continue
-  ln -sfn "$NEW_VERSION" "$TARGET"
-  echo "✔ 옛 버전 경로 복원: $OLD_NAME → $NEW_VERSION (활성 세션 hook 유지)"
+  if [ -L "$TARGET" ]; then
+    ln -sfn "$NEW_VERSION" "$TARGET"
+  elif [ -d "$TARGET" ]; then
+    # 디렉토리를 심볼릭으로 원자 교체하는 수단은 없다 — rename 은 디렉토리 위에 심볼릭을 덮지 못한다.
+    # 대신 실패 창을 줄인다. mv 로 비켜두고 즉시 심볼릭을 만든 뒤, 오래 걸리는 삭제를 마지막에 한다.
+    # 반대 순서(rm -rf 먼저)면 트리 삭제에 걸리는 시간 전체가 hook 실패 창이 된다.
+    STALE="$TARGET.stale.$$"
+    mv "$TARGET" "$STALE"
+    ln -sfn "$NEW_VERSION" "$TARGET"
+    rm -rf "$STALE"
+  else
+    ln -sfn "$NEW_VERSION" "$TARGET"
+  fi
+  echo "✔ 옛 버전 경로 정렬: $OLD_NAME → $NEW_VERSION (활성 세션 hook 유지)"
   RESTORED=$((RESTORED + 1))
 done
-[ "$RESTORED" -eq 0 ] && echo "ℹ 복원할 옛 버전 경로 없음"
+[ "$RESTORED" -eq 0 ] && echo "ℹ 정렬할 옛 버전 경로 없음"
 
 # --- Step 3: 검증 ---
 INSTALLED_VERSION=$(cat "$NEW_CACHE/VERSION" 2>/dev/null || echo "MISSING")
