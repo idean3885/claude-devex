@@ -20,6 +20,91 @@ export const VISIBILITY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 // 본인 계정·조직 목록 캐시 유효 기간. 소속 변경은 공개 전환보다도 드물다.
 export const IDENTITY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+// 이 길이 이하의 ASCII 키워드는 wordBoundary 를 기본 적용한다.
+// 실측: 3글자 키워드 하나가 19건 중 12건이 다른 식별자 안에 묻힌 형태였다.
+// 오탐이 쌓이면 가드를 끄고 싶어지고, 가드에서 오탐은 결국 무동작으로 이어진다.
+export const WORD_BOUNDARY_AUTO_LEN = 3;
+
+/**
+ * 단어 경계 문자 집합 — 식별자 문자만 포함한다. 한글은 **넣지 않는다.**
+ *
+ * 한글을 경계 문자로 넣으면 조사가 붙은 정상 등장이 "묻힌 것" 으로 분류된다.
+ * 한국어는 조사가 명사에 직접 붙으므로(`Foo를`, `Foo에서`) 그 형태가 전부 통과하게 되고,
+ * 그건 가드에서 오탐이 아니라 **미탐**이다. 오탐은 작업을 막고, 미탐은 대외비를 내보낸다.
+ * 두 오류의 비용이 다르므로 경계 판정은 차단 쪽으로 닫는다.
+ *
+ * 대신 한글만으로 된 키워드에는 경계 판정이 사실상 무력하다(앞뒤가 늘 비경계 문자).
+ * 그런 키워드의 오탐은 경계 옵션이 아니라 목록에서 빼는 쪽으로 다룬다.
+ */
+const WORD_CHAR = /[0-9A-Za-z_]/;
+
+/**
+ * 키워드 항목을 정규화한다. 문자열과 객체 양쪽을 받는다.
+ *
+ *   "abc"                                    → 기본값 적용
+ *   { value: "abc", wordBoundary: false }    → 명시 지정
+ *   { value: "abc", ignoreCase: true }       → 표기형 무시
+ *
+ * ignoreCase 를 켜면 대소문자 표기형을 따로 등록할 필요가 없다. 표기형마다 항목을
+ * 넣는 방식은 세 번째 표기형이 생기면 빠져나간다.
+ */
+export function normalizeKeywords(value) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  for (const item of value) {
+    let raw, wb, ic;
+    if (typeof item === 'string') { raw = item; }
+    else if (item && typeof item === 'object' && typeof item.value === 'string') {
+      raw = item.value;
+      wb = typeof item.wordBoundary === 'boolean' ? item.wordBoundary : undefined;
+      ic = typeof item.ignoreCase === 'boolean' ? item.ignoreCase : undefined;
+    } else continue;
+    if (!raw) continue;
+    const asciiWordish = /^[0-9A-Za-z_.-]+$/.test(raw);
+    out.push({
+      value: raw,
+      // 자동 적용은 ASCII 짧은 키워드에만. 한글 키워드는 경계 판정이 무력하므로 켜지 않는다.
+      wordBoundary: wb !== undefined ? wb : (asciiWordish && raw.length <= WORD_BOUNDARY_AUTO_LEN),
+      ignoreCase: ic !== undefined ? ic : false,
+    });
+  }
+  return out;
+}
+
+/**
+ * 텍스트에서 키워드 등장 위치를 찾는다. 가드와 스캐너가 같은 매처를 쓴다.
+ *
+ * 반환: [{ index, length, standalone }]  — standalone 은 경계 판정 결과.
+ * 경계 판정을 적용하지 않는 키워드는 standalone 을 null 로 둔다.
+ */
+export function findKeywordHits(text, kw) {
+  const hay = kw.ignoreCase ? text.toLowerCase() : text;
+  const needle = kw.ignoreCase ? kw.value.toLowerCase() : kw.value;
+  const len = needle.length;
+  const hits = [];
+  let idx = hay.indexOf(needle);
+  while (idx !== -1) {
+    const standalone = isStandaloneAt(text, idx, len);
+    // wordBoundary 가 켜져 있으면 묻힌 등장은 히트로 세지 않는다.
+    if (!kw.wordBoundary || standalone) {
+      hits.push({ index: idx, length: len, standalone: boundaryApplicable(kw) ? standalone : null });
+    }
+    idx = hay.indexOf(needle, idx + len);
+  }
+  return hits;
+}
+
+/** 경계 판정이 의미를 갖는 키워드인지. ASCII 식별자 문자를 포함해야 한다. */
+export function boundaryApplicable(kw) {
+  return WORD_CHAR.test(kw.value);
+}
+
+function isStandaloneAt(text, idx, len) {
+  const before = idx > 0 ? text[idx - 1] : '';
+  const after = idx + len < text.length ? text[idx + len] : '';
+  return !(before && WORD_CHAR.test(before)) && !(after && WORD_CHAR.test(after));
+}
+
 export function loadConfig() {
   const cfgPath = process.env.OPS_AGENT_CONFIDENTIAL_CONFIG_PATH
     || join(homedir(), '.claude', 'ops-agent', 'confidential-keywords.local.json');
@@ -33,16 +118,16 @@ export function loadConfig() {
   try {
     const raw = JSON.parse(readFileSync(cfgPath, 'utf8'));
     return {
-      keywords: toStringArray(raw.keywords),
+      keywords: normalizeKeywords(raw.keywords),
       patterns: toRegexArray(raw.patterns),
       externalOnly: {
-        keywords: toStringArray(raw.externalOnly && raw.externalOnly.keywords),
+        keywords: normalizeKeywords(raw.externalOnly && raw.externalOnly.keywords),
         patterns: toRegexArray(raw.externalOnly && raw.externalOnly.patterns),
       },
       // 사내 공유 표면에 개인 환경 흔적이 드러나는 것을 막는 규칙.
       // 방향만 반대이고 강도는 externalOnly 와 같다.
       personalDevOnly: {
-        keywords: toStringArray(raw.personalDevOnly && raw.personalDevOnly.keywords),
+        keywords: normalizeKeywords(raw.personalDevOnly && raw.personalDevOnly.keywords),
         patterns: toRegexArray(raw.personalDevOnly && raw.personalDevOnly.patterns),
       },
       internalHosts: toStringArray(raw.internalHosts),

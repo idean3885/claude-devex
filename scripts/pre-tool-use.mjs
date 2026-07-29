@@ -37,7 +37,7 @@ import { scanWhatViolations, snippet } from './what-guard-rules.mjs';
 // 규칙 로딩·공개 여부 판정은 confidential-scan.mjs 와 공유한다.
 // 복제하면 가드와 스캐너의 판정이 갈라진다.
 import {
-  loadConfig, isEmptyConfig, parseRemote, lookupVisibility, shellQuote,
+  loadConfig, isEmptyConfig, parseRemote, lookupVisibility, shellQuote, findKeywordHits,
 } from './confidential-rules.mjs';
 
 // ─── stdin 수집 ───
@@ -380,15 +380,17 @@ function collectCommitDiffTexts(command, cwd, allowPaths, texts) {
 
 function collectHits(t, keywords, patterns, hits) {
   for (const kw of keywords) {
-    if (!kw) continue;
-    let idx = t.value.indexOf(kw);
-    while (idx !== -1) {
+    if (!kw || !kw.value) continue;
+    // 매칭은 findKeywordHits 가 담당한다. 단어 경계·대소문자 옵션이 스캐너와 같은
+    // 판정을 쓰도록 매처 자체를 공유한다.
+    for (const h of findKeywordHits(t.value, kw)) {
       hits.push({
-        keyword: kw,
+        // 등록된 값이 아니라 실제 등장 표기형을 담는다. ignoreCase 로 걸린 경우
+        // 어떤 표기가 들어갔는지가 정정에 필요하다.
+        keyword: t.value.slice(h.index, h.index + h.length),
         source: t.source,
-        context: snippet(t.value, idx, kw.length),
+        context: snippet(t.value, h.index, h.length),
       });
-      idx = t.value.indexOf(kw, idx + kw.length);
     }
   }
   for (const pat of patterns) {
