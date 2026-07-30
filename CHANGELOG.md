@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.15.0] - 2026-07-30
+
+### Fixed
+- feat: 전수 스캔에 --owner(레포 목록 자동 수집)·--branches(원격 브랜치 전체) 추가. 잔재 브랜치를 고유 커밋 0건 기준으로 '삭제 안전' 판정하고, archived+PUBLIC 조합에 경고를 붙인다
+
 ## [6.14.0] - 2026-07-30
 
 ### Fixed
