@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.16.0] - 2026-07-30
+
+### Fixed
+- feat: 전수 스캔에서 아카이빙 레포를 「참고」 구획으로 분리하고 --exclude·--include-archived 추가. 조치할 수 없거나 유지하기로 정한 대상이 조치 대상에 남으면 새 노출과 판단이 끝난 노출을 구분할 수 없다
+
 ## [6.15.0] - 2026-07-30
 
 ### Fixed

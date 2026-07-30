@@ -99,8 +99,23 @@ function main() {
   return results.some(r => !isReference(r) && actionableHits(r) > 0) ? 1 : 0;
 }
 
+/**
+ * 조치 대상이 아닌 것 — 「참고」 구획으로 빼고 종료 코드에서 제외한다.
+ *
+ * 조치할 수 없거나 조치하지 않기로 정한 대상을 조치 대상에 남기면 리포트가 영구히
+ * 빨간 상태가 된다. 그러면 새로 생긴 노출과 이미 판단이 끝난 노출을 구분할 수 없다.
+ *
+ * - 외부 소유: 권한이 없다
+ * - 포크: upstream 내용이 섞인다
+ * - 아카이빙: 읽기 전용이라 해제 없이는 커밋할 수 없다. 포크와 같은 성질이다
+ * - 명시 제외(`--exclude`): 확인 후 유지하기로 정한 대상
+ *
+ * 빼더라도 존재는 보고에 남긴다. 특히 archived + PUBLIC 은 공개 열람이 그대로이므로
+ * 경고를 붙인다. 조치 대상에서 빼는 것과 노출이 사라지는 것은 다르다.
+ */
 function isReference(r) {
-  return r.external === true || r.isFork === true;
+  return r.external === true || r.isFork === true || r.excluded === true
+    || (r.isArchived === true && !r.includeArchived);
 }
 
 function actionableHits(r) {
@@ -120,6 +135,8 @@ function usage() {
     '  --history           키워드별 히스토리 커밋 수를 함께 센다 (git log -S)',
     '  --json              기계 판독 출력',
     `  --max-bytes N       파일 크기 상한 (기본 ${DEFAULT_MAX_BYTES})`,
+    '  --exclude <name>    조치 대상에서 뺀다 (여러 번 지정 가능). 확인 후 유지하기로 정한 레포',
+    '  --include-archived  아카이빙 레포도 조치 대상에 포함 (기본은 「참고」 구획)',
     '  --progress          진행 상황을 stderr 로 출력',
   ].join('\n');
 }
@@ -129,6 +146,7 @@ function parseArgs(argv) {
     dirs: [], owner: null, visibility: 'public',
     branches: false, history: false, json: false,
     maxBytes: DEFAULT_MAX_BYTES, progress: false,
+    exclude: [], includeArchived: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -136,6 +154,12 @@ function parseArgs(argv) {
     else if (a === '--history') opts.history = true;
     else if (a === '--json') opts.json = true;
     else if (a === '--progress') opts.progress = true;
+    else if (a === '--include-archived') opts.includeArchived = true;
+    else if (a === '--exclude') {
+      const v = argv[++i];
+      if (!v || v.startsWith('-')) return { error: '--exclude 값이 없습니다' };
+      opts.exclude.push(v);
+    }
     else if (a === '--owner') {
       opts.owner = argv[++i];
       if (!opts.owner || opts.owner.startsWith('-')) return { error: '--owner 값이 없습니다' };
@@ -208,6 +232,7 @@ function scanTarget(t, cfg, opts) {
     visibility: t.visibility || null, isFork: t.isFork === true, isArchived: t.isArchived === true,
     surface: null, surfaceReason: '', defaultBranch: t.defaultBranch || null,
     tree: null, branches: [], error: null,
+    includeArchived: opts.includeArchived === true, excluded: false, excludeReason: null,
   };
 
   let tmp = null;
@@ -235,6 +260,7 @@ function scanTarget(t, cfg, opts) {
     }
 
     applyRepoMeta(base, root, cfg);
+    applyExclusion(base, opts);
 
     const rules = buildRules(cfg, base.surface);
     if (rules.length === 0) {
@@ -289,6 +315,25 @@ function applyRepoMeta(base, root, cfg) {
   } else {
     base.surface = 'public';
     base.surfaceReason = 'origin 없음 — public 으로 닫음';
+  }
+}
+
+/**
+ * 명시 제외 판정. 레포 이름 또는 owner/name 형태를 받는다.
+ *
+ * 아카이빙이 아닌데도 유지하기로 정한 대상을 도구가 알 방법은 없다. 사람이 지정한다.
+ */
+function applyExclusion(base, opts) {
+  if (!opts.exclude || opts.exclude.length === 0) return;
+  const name = base.slug ? base.slug.split('/').slice(-1)[0] : null;
+  const ownerName = base.owner && name ? `${base.owner}/${name}` : null;
+  const hit = opts.exclude.find(x => {
+    const v = x.toLowerCase();
+    return (name && v === name.toLowerCase()) || (ownerName && v === ownerName.toLowerCase());
+  });
+  if (hit) {
+    base.excluded = true;
+    base.excludeReason = '명시 제외 (--exclude)';
   }
 }
 
@@ -547,7 +592,9 @@ function renderText(results, opts, values) {
 
   lines.push('대외비 전수 스캔 — 값은 출력하지 않습니다 (규칙 식별자·길이·건수·경로만)');
   lines.push(`범위: ${opts.owner ? `owner=${opts.owner} visibility=${opts.visibility}` : '지정 경로'}`
-    + (opts.branches ? ' · 원격 브랜치 전체' : ' · 기본 브랜치만'));
+    + (opts.branches ? ' · 원격 브랜치 전체' : ' · 기본 브랜치만')
+    + (opts.includeArchived ? ' · 아카이빙 포함' : '')
+    + (opts.exclude.length ? ` · 제외 ${opts.exclude.length}곳` : ''));
 
   if (own.length) {
     lines.push('');
@@ -556,7 +603,7 @@ function renderText(results, opts, values) {
   }
   if (ref.length) {
     lines.push('');
-    lines.push('══ 참고 (외부 소유·포크 — 조치 대상 아님, 종료 코드에 넣지 않음) ══');
+    lines.push('══ 참고 (외부 소유·포크·아카이빙·명시 제외 — 조치 대상 아님, 종료 코드에 넣지 않음) ══');
     ref.forEach(r => renderRepo(lines, r, opts, values));
   }
 
@@ -589,7 +636,8 @@ function renderRepo(lines, r, opts, values) {
 
   const owner = r.owner ? `owner=${redactPath(r.owner, values)}` : 'owner=미확인';
   const visLabel = r.surface === 'internal' ? '사내' : (r.visibility || '미확인');
-  const tags = [r.isArchived ? 'archived' : null, r.isFork ? 'fork' : null].filter(Boolean);
+  const tags = [r.isArchived ? 'archived' : null, r.isFork ? 'fork' : null,
+    r.excluded ? 'excluded' : null, r.external ? 'external' : null].filter(Boolean);
   lines.push(`    ${owner}  공개여부=${visLabel}  표면=${r.surface} (${r.surfaceReason})`
     + (tags.length ? `  [${tags.join(' ')}]` : ''));
   // 아카이빙은 읽기 전용으로 만드는 것이고 공개 열람을 막지 않는다.
@@ -649,7 +697,10 @@ function renderJson(results, opts, values) {
   });
   return JSON.stringify({
     note: '값은 포함하지 않습니다. ruleId 로 로컬 설정을 조회하세요.',
-    scope: { owner: opts.owner, visibility: opts.visibility, branches: opts.branches, history: opts.history },
+    scope: {
+      owner: opts.owner, visibility: opts.visibility, branches: opts.branches,
+      history: opts.history, exclude: opts.exclude, includeArchived: opts.includeArchived,
+    },
     repos: results.map(r => ({
       label: redactPath(r.label, values),
       owner: r.owner ? redactPath(r.owner, values) : null,
