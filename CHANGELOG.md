@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.18.0] - 2026-08-01
+
+### Fixed
+- feat: 여러 직무가 묶인 공고를 지원 단위로 펼치는 job-crawler expand 옵션
+
 ## [6.17.0] - 2026-07-31
 
 ### Fixed

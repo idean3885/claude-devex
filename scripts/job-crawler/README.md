@@ -11,6 +11,7 @@ SPA 채용 페이지를 헤드리스 Chromium 으로 렌더링해 공고를 추�
 | SPA 렌더 대기·lazy load 스크롤 | 크롤링 대상 목록 (url·selector) |
 | selector 추출 + 링크 heuristic fallback | 핏 룰 (pattern·delta·label) |
 | 룰 합산·등급 판정 | 임계값 |
+| 묶음 공고를 지원 단위로 펼치기 | 어느 대상이 묶음 구조인지 (`expand`) |
 | 추천 전용 공고 감지·후보 제외 | 상세 확인 상한, 출력 경로 |
 | 공고 원문 저장, 마크다운 리포트 | |
 
@@ -64,6 +65,29 @@ node .../crawl.js --out dir                                        # 출력 경�
 | 추천전용 | 상세에서 추천 전용으로 판정 (핏 후보에서 제외) |
 
 추천 전용은 지인·임직원 추천으로만 받는 공고다. 점수가 높아도 직접 지원할 수 없어 후보에서 빼되, 자리가 있다는 사실은 정보라 리포트에는 따로 남긴다. 판정 신호는 두 가지 — 명시 문구, 또는 추천서 CTA 만 있고 일반 지원 CTA 가 없는 경우.
+
+## 묶음 공고 펼치기
+
+목록에서는 한 건인데 그 아래 계열사별·챕터별 자식 공고가 여러 건 달린 채용 페이지가 있다. 부모 URL 만 보면 세 가지가 어긋난다.
+
+- 원문이 소개뿐이라 자격요건·우대사항·전형절차가 잡히지 않는다
+- 점수가 묶음 제목 하나로만 매겨져 어느 자식이 맞는지 알 수 없다
+- 자식이 `<a href>` 가 아니라 쿼리 파라미터로만 갈려 링크 추출로 닿지 않는다
+
+자식의 제목·소속·키워드·원문이 상세 페이지의 react-query SSR 캐시(`__NEXT_DATA__`)에 통째로 실려 있으면, 프로파일이 `targets[].expand` 를 선언해 부모 1건을 자식 N건으로 갈아끼운다. 자식 페이지를 따로 열지 않으므로 추가 요청이 없고 `detail.cap` 도 소비하지 않는다.
+
+```json
+"expand": {
+  "queryKey": "sub-positions",
+  "jsonString": true,
+  "group": "company",
+  "keywords": "keywords",
+  "body": "description",
+  "params": { "sub_position_id": "id", "company": "company" }
+}
+```
+
+자식 URL 은 부모 URL 에 `params` 를 덧쓴 것이다. 채점 텍스트는 제목·소속·키워드까지로 제한한다 — 본문 전문으로 채점하면 목록 제목으로 채점되는 다른 대상보다 점수가 부풀어 대상 간 비교가 깨진다. 본문은 원문 저장과 추천 전용 감지에만 쓴다. 캐시에서 항목을 찾지 못하면 부모를 그대로 둔다. 필드 설명은 [`config/job-crawler/example.json`](../../config/job-crawler/example.json) 의 `_expandNote`.
 
 ## 한계
 
