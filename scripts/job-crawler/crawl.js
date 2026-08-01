@@ -142,11 +142,13 @@ async function main() {
       console.error(`[crawl] ${name} ...`);
       const r = await collectOne(browser, name, cfg, ctx);
       if (ctx.detail && !r.error && r.jobs.some((j) => j.score >= ctx.threshold)) {
-        const { examined, skipped } = await enrichDetails(browser, r, ctx);
+        const { examined, skipped, expanded } = await enrichDetails(browser, r, ctx, cfg);
         r.detailSkipped = skipped;
+        r.expanded = expanded;
         const dropped = r.jobs.filter((j) => j.referralOnly).length;
         console.error(
           `[detail] ${name}: ${examined}건 확인` +
+            (expanded ? `, 묶음 공고 → ${expanded}건으로 펼침` : '') +
             (dropped ? `, 추천 전용 ${dropped}건 제외` : '') +
             (skipped ? `, 상한 초과 ${skipped}건 미확인` : '')
         );

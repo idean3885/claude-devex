@@ -25,6 +25,9 @@ function renderReport(results, ctx) {
     lines.push('');
     lines.push(`- URL: ${r.url}`);
     lines.push(`- 공고 수: **${r.count}건**${r.fallback ? ' (selector 미매칭 → 링크 heuristic)' : ''}`);
+    if (r.expanded) {
+      lines.push(`- 묶음 공고를 지원 단위 **${r.expanded}건**으로 펼침`);
+    }
     if (r.error) {
       lines.push(`- **에러**: ${r.error}`);
       lines.push('');
@@ -103,18 +106,25 @@ function renderReport(results, ctx) {
 }
 
 function renderDetailFile(company, job, stamp) {
-  return [
+  const head = [
     `# ${company} 공고 상세 (크롤 ${stamp})`,
     '',
     `- URL: ${job.url}`,
     `- 핏 score: ${job.score} (${job.reasons.map((x) => x.label).join(', ')})`,
-    '',
-    '## 공고 원문 (innerText)',
-    '',
-    '```text',
-    job.detail,
-    '```',
-  ].join('\n');
+  ];
+  if (job.expandedFrom) {
+    head.push(`- 묶음 공고에서 펼침: ${job.expandedFrom}`);
+  }
+  return head
+    .concat([
+      '',
+      job.expandedFrom ? '## 공고 원문 (묶음 공고 캐시)' : '## 공고 원문 (innerText)',
+      '',
+      '```text',
+      job.detail,
+      '```',
+    ])
+    .join('\n');
 }
 
 module.exports = { renderReport, renderDetailFile };
