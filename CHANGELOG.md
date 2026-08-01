@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.20.0] - 2026-08-01
+
+### Fixed
+- feat: 추상 차원 명사 축 금지 (D-16 신설, forbidden 등록)
+
 ## [6.19.0] - 2026-08-01
 
 ### Fixed
