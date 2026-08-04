@@ -4,6 +4,11 @@
 
 형식: [Semantic Versioning](https://semver.org/)
 
+## [6.21.0] - 2026-08-04
+
+### Fixed
+- feat: job-crawler 진입 대기 조건을 대상별로 덮어쓰기 (#214)
+
 ## [6.20.0] - 2026-08-01
 
 ### Fixed

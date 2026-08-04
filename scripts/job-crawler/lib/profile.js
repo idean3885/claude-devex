@@ -8,6 +8,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+const { GOTO_WAIT_UNTIL } = require('./browser');
+
 const USER_SCOPE = path.join(os.homedir(), '.claude', 'job-crawler', 'profiles');
 const PROJECT_SCOPE = path.join('config', 'job-crawler');
 
@@ -78,6 +80,23 @@ function validate(profile, file) {
   for (const [name, cfg] of Object.entries(targets)) {
     if (!cfg || typeof cfg.url !== 'string' || !/^https?:/.test(cfg.url)) {
       throw new Error(`${file}: targets["${name}"].url 이 http(s) URL 이 아닙니다.`);
+    }
+    // 오타를 크롤링 중간이 아니라 로드 시점에 잡는다. 대상 20곳을 돌다가 한 곳에서
+    // 죽으면 앞선 수집이 버려진다.
+    const goto = cfg.goto;
+    if (goto !== undefined) {
+      if (typeof goto !== 'object' || goto === null) {
+        throw new Error(`${file}: targets["${name}"].goto 가 객체가 아닙니다.`);
+      }
+      if (goto.waitUntil !== undefined && !GOTO_WAIT_UNTIL.includes(goto.waitUntil)) {
+        throw new Error(
+          `${file}: targets["${name}"].goto.waitUntil="${goto.waitUntil}" 은 허용값이 아닙니다.\n` +
+            `  허용: ${GOTO_WAIT_UNTIL.join(' | ')}`
+        );
+      }
+      if (goto.timeout !== undefined && !(Number.isFinite(goto.timeout) && goto.timeout > 0)) {
+        throw new Error(`${file}: targets["${name}"].goto.timeout 이 양수(ms)가 아닙니다.`);
+      }
     }
   }
   if (!Array.isArray(profile.rules) || profile.rules.length === 0) {

@@ -114,4 +114,36 @@ async function newPage(browser) {
   return page;
 }
 
-module.exports = { findChromium, launch, newPage, USER_AGENT };
+// 진입 대기 조건. 기본은 networkidle2 지만, 애널리틱스·폴링·웹소켓으로 연결을 계속
+// 유지하는 사이트는 렌더가 끝났는데도 idle 에 도달하지 못해 타임아웃한다. 렌더 대기는
+// waitFor 셀렉터가 따로 받으므로 대상별로 진입 조건만 느슨하게 열 수 있게 한다.
+const GOTO_WAIT_UNTIL = ['load', 'domcontentloaded', 'networkidle0', 'networkidle2'];
+
+function resolveGoto(cfg, defaults) {
+  const o = (cfg && cfg.goto) || {};
+  return {
+    waitUntil: o.waitUntil || defaults.waitUntil,
+    timeout: Number.isFinite(o.timeout) ? o.timeout : defaults.timeout,
+  };
+}
+
+// 실패 사유에 적용된 대기 조건을 남긴다. 없으면 타임아웃 메시지만 보고 사이트가 느린
+// 것인지 조건이 안 맞는 것인지 구분할 수 없다.
+async function gotoWith(page, url, opts) {
+  try {
+    await page.goto(url, opts);
+  } catch (e) {
+    e.message = `${e.message} [waitUntil=${opts.waitUntil}, timeout=${opts.timeout}ms]`;
+    throw e;
+  }
+}
+
+module.exports = {
+  findChromium,
+  launch,
+  newPage,
+  resolveGoto,
+  gotoWith,
+  GOTO_WAIT_UNTIL,
+  USER_AGENT,
+};
