@@ -4,8 +4,11 @@
 // 떨어진다. heuristic 은 "공고처럼 보이는 링크" 를 거르는 사전 필터라 어떤 직군을 찾는지에
 // 좌우된다 — 그래서 패턴을 프로파일이 덮어쓸 수 있게 둔다.
 
-const { newPage } = require('./browser');
+const { newPage, resolveGoto, gotoWith } = require('./browser');
 const { score, classify } = require('./scorer');
+
+// 목록 진입 기본값. 대상이 targets[].goto 로 덮어쓸 수 있다.
+const LIST_GOTO = { waitUntil: 'networkidle2', timeout: 45000 };
 
 const DEFAULT_LINK_PATTERN =
   '(개발|엔지니어|채용|공고|Engineer|Developer|Backend|Frontend|Server|SRE|Data|Cloud|Platform)';
@@ -66,7 +69,7 @@ async function collectOne(browser, name, cfg, ctx) {
   const result = { name, url: cfg.url, count: 0, jobs: [], error: null, fallback: false };
 
   try {
-    await page.goto(cfg.url, { waitUntil: 'networkidle2', timeout: 45000 });
+    await gotoWith(page, cfg.url, resolveGoto(cfg, LIST_GOTO));
 
     if (cfg.waitFor) {
       try {

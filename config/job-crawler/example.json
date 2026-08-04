@@ -20,6 +20,7 @@
   },
 
   "_targetsNote": "크롤링 대상. url 만 필수. waitFor(렌더 대기 selector)·extract.container(공고 항목 selector)를 알면 정확도가 올라가고, 생략하면 링크 텍스트 heuristic 으로 떨어진다.",
+  "_gotoNote": "선택. 페이지 진입 대기 조건을 대상별로 덮어쓴다. 기본은 목록 networkidle2/45000ms, 상세 networkidle2/30000ms 이고, 선언하면 목록과 상세에 함께 적용된다(타임아웃 기본값만 다름). 애널리틱스·폴링·웹소켓으로 연결을 계속 유지하는 사이트는 렌더가 끝났는데도 networkidle2 에 도달하지 못해 타임아웃하고 0건으로 보고된다. 그때 domcontentloaded 로 낮춘다. 렌더 대기는 waitFor 셀렉터가 받으므로 진입 조건만 느슨하게 해도 추출 시점은 유지된다 — waitFor 없이 낮추면 추출이 빨라져 건수가 줄 수 있다. waitUntil 허용값: load | domcontentloaded | networkidle0 | networkidle2.",
   "_expandNote": "선택. 목록 한 건이 실제로는 여러 지원 단위를 묶은 공고일 때 자식 공고로 펼친다. 자식 정보는 상세 페이지의 react-query SSR 캐시(__NEXT_DATA__)에서 꺼내므로 추가 요청이 없다. queryKey(캐시 키 부분 일치)와 params(자식 URL 을 만들 쿼리 파라미터 → 항목 필드) 가 필수. jsonString 은 캐시 값이 JSON 문자열일 때 true. title(기본 'title')·group(제목 앞에 붙는 소속)·keywords 는 채점 텍스트를 이룬다 — 본문 전문으로 채점하면 목록 제목으로 채점되는 다른 대상보다 점수가 부풀어 비교가 깨지므로 본문은 넣지 않는다. body 는 원문 저장·추천 전용 감지에만 쓴다. 자식 URL = 부모 URL + params. 펼칠 항목이 없으면 부모를 그대로 둔다.",
   "targets": {
     "예시회사": {
@@ -31,6 +32,12 @@
     },
     "셀렉터를 모르는 회사": {
       "url": "https://example.org/careers"
+    },
+    "networkidle2 에 도달하지 못하는 회사": {
+      "url": "https://recruit.example.co.kr/jobs",
+      "goto": { "waitUntil": "domcontentloaded", "timeout": 20000 },
+      "waitFor": "a[href*='/jobs/']",
+      "extract": { "container": "a[href*='/jobs/']" }
     },
     "여러 직무를 한 공고로 묶는 회사": {
       "url": "https://careers.example.net/jobs",

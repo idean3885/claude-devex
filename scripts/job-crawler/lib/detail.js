@@ -7,8 +7,12 @@
 // 목록 한 건이 실제로는 여러 지원 단위를 묶은 것일 때가 있다. 그때는 상세를 여는
 // 김에 자식 공고로 펼쳐 각자 채점한다 (expand.js).
 
-const { newPage } = require('./browser');
+const { newPage, resolveGoto, gotoWith } = require('./browser');
 const { expandGrouped } = require('./expand');
+
+// 상세 진입 기본값. 목록과 같은 대상 설정(targets[].goto)을 쓰되 기본 타임아웃만 다르다 —
+// 목록에서 대기 조건을 바꿔야 했던 사이트는 상세도 같은 조건이 필요하다.
+const DETAIL_GOTO = { waitUntil: 'networkidle2', timeout: 30000 };
 
 // 신호 1: 추천 전용을 명시한 문구.
 const REFERRAL_PHRASE =
@@ -38,10 +42,10 @@ function compactDetail(text, maxChars) {
 
 // 원문과 함께 SSR 캐시(__NEXT_DATA__)도 꺼낸다. 묶음 공고는 자식 정보가 화면이 아니라
 // 캐시에 있어 innerText 만으로는 펼칠 수 없다.
-async function fetchPage(browser, url) {
+async function fetchPage(browser, url, goto = DETAIL_GOTO) {
   const page = await newPage(browser);
   try {
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+    await gotoWith(page, url, goto);
     await new Promise((r) => setTimeout(r, 1500));
     return await page.evaluate(() => {
       const el = document.getElementById('__NEXT_DATA__');
@@ -52,8 +56,8 @@ async function fetchPage(browser, url) {
   }
 }
 
-async function fetchDetail(browser, url) {
-  return (await fetchPage(browser, url)).text;
+async function fetchDetail(browser, url, goto) {
+  return (await fetchPage(browser, url, goto)).text;
 }
 
 // 핏 후보만 상세를 연다. 추천 전용으로 판정되면 verdict 를 바꿔 후보에서 빼고,
@@ -66,12 +70,13 @@ async function enrichDetails(browser, result, ctx, cfg = {}) {
     (j) => j.score >= ctx.threshold && j.url && /^https?:/.test(j.url)
   );
   const targeted = fits.slice(0, ctx.detailCap);
+  const goto = resolveGoto(cfg, DETAIL_GOTO);
   let expanded = 0;
 
   for (const j of targeted) {
     let page;
     try {
-      page = await fetchPage(browser, j.url);
+      page = await fetchPage(browser, j.url, goto);
     } catch (e) {
       j.detailError = e.message;
       continue;
