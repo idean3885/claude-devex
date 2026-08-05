@@ -2,7 +2,18 @@
 
 이 프로젝트의 주요 변경사항을 기록합니다.
 
-형식: [Semantic Versioning](https://semver.org/)
+- 형식: [Keep a Changelog 1.1.0](https://keepachangelog.com/ko/1.1.0/) — 분류는 `Added` · `Changed` · `Deprecated` · `Removed` · `Fixed` · `Security` 6종
+- 버전: [Semantic Versioning](https://semver.org/lang/ko/)
+- `Unreleased` 섹션을 두지 않는다. 이 레포는 변경을 즉시 버전업하므로 미발행 대기 구간이 존재하지 않는다
+- 분류 기준은 **6.22.0 부터** 적용한다. 그 이전 항목은 카테고리가 내용과 어긋날 수 있으며 소급 정정하지 않는다 — 짧은 제목만으로 재분류하면 또 다른 추측이 되고, 이미 발행된 릴리즈 노트와 어긋난다
+- 항목은 `scripts/bump-version.sh` 가 삽입한다. 아래 앵커가 삽입 지점이다
+
+<!-- bump-version.sh 삽입 지점 -->
+
+## [6.22.0] - 2026-08-05
+
+### Added
+- feat: 커밋 타입에서 체인지로그 분류와 버전 증분을 유도 (#217)
 
 ## [6.21.0] - 2026-08-04
 

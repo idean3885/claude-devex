@@ -77,7 +77,9 @@ PlantUML 사용 시: `example.puml` → `example.svg` 필수 생성
 
 `/flow` 의 commit 단계에서 커밋 컨벤션이 자동 적용됩니다.
 
-타입: `init`, `feat`, `fix`, `docs`, `refactor`, `chore`
+타입 기본값: `feat`, `fix`, `docs`, `refactor`, `chore`, `ci`, `perf`, `style`, `test`, `build`
+
+커밋 타입은 체인지로그 분류와 버전 증분을 결정합니다 — `feat`→`Added`/MINOR, `fix`→`Fixed`/PATCH, 그 외→`Changed`/PATCH, `!` 또는 `BREAKING CHANGE:`→`Changed`/MAJOR. 레포가 자기 타입 목록을 선언하면 그 선언이 기본값을 대체합니다. 상세는 commit 단계 가이드 참조.
 
 ## 워크트리 분기
 
@@ -100,6 +102,12 @@ PlantUML 사용 시: `example.puml` → `example.svg` 필수 생성
 
 1인 개발 레포이므로 변경 = 버전업이다. 예외를 두지 않는다.
 
+체인지로그는 [Keep a Changelog 1.1.0](https://keepachangelog.com/ko/1.1.0/) 분류를 따른다. `Unreleased` 섹션은 두지 않는다 — 변경을 즉시 버전업하므로 미발행 대기 구간이 없다.
+
+**이 레포의 커밋 타입 선언**: `feat`, `fix`, `docs`, `refactor`, `chore`, `ci`
+
+기본값에서 `build`(빌드 단계 없음), `style`·`test`·`perf`(이력 0건)를 뺀 목록이다. `init`, `release`, `usage` 는 쓰지 않는다.
+
 `scripts/bump-version.sh` 가 아래 4곳을 동시에 갱신한다. 수동 편집하면 4곳이 어긋나 캐시 경로 해석이 깨진다.
 - `VERSION`
 - `CHANGELOG.md`
@@ -107,8 +115,10 @@ PlantUML 사용 시: `example.puml` → `example.svg` 필수 생성
 - `.claude-plugin/marketplace.json` → `plugins[0].version`
 
 ```bash
-./scripts/bump-version.sh <version> "<changelog_entry>"
+./scripts/bump-version.sh <version> "<changelog_entry>" [category]
 ```
+
+`category` 를 생략하면 changelog 항목의 타입 접두에서 유도한다. 유도할 수 없으면 실패하므로, 항목에 `feat:` 같은 접두를 붙이거나 카테고리를 직접 넘긴다. CHANGELOG 삽입 지점은 헤더의 앵커 주석이며, 앵커가 사라지면 스크립트가 멈춘다.
 
 ### 산출물 특성
 
