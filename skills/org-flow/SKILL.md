@@ -89,6 +89,7 @@ cwd basename 으로 org 이름을 추론한 뒤, 두 위치에서 매니페스�
 | `rootDir` | string | 프로젝트 루트 절대 경로 (매니페스트 작성 시점 기준) |
 | `providers.*` | string | provider 어댑터 식별자 (선택 키, 미정의 시 fallback) |
 | `scriptOverrides.*` | string | 본체 스크립트 대신 사용할 외부 경로 (선택) |
+| `conventions` | object | 이 org 의 커밋·체인지로그 표기 기본값 (선택). 레포 선언이 있으면 레포가 이긴다. 스키마·해석 순서는 [docs/conventions-slot.md](../../docs/conventions-slot.md) |
 | `pullMainsOnStart` | boolean | `/org-flow start` Step 2 에서 메인 클론 일괄 pull 여부 (기본 true, 메인 클론 미유지 org 는 false) |
 
 `providers.*` 키 미정의 시 ops-agent 의 기존 host 기반 provider 자동 감지로 fallback 한다 (`providers/github.md` 등).
