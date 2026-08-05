@@ -79,7 +79,9 @@ PlantUML 사용 시: `example.puml` → `example.svg` 필수 생성
 
 타입 기본값: `feat`, `fix`, `docs`, `refactor`, `chore`, `ci`, `perf`, `style`, `test`, `build`
 
-커밋 타입은 체인지로그 분류와 버전 증분을 결정합니다 — `feat`→`Added`/MINOR, `fix`→`Fixed`/PATCH, 그 외→`Changed`/PATCH, `!` 또는 `BREAKING CHANGE:`→`Changed`/MAJOR. 레포가 자기 타입 목록을 선언하면 그 선언이 기본값을 대체합니다. 상세는 commit 단계 가이드 참조.
+커밋 타입은 체인지로그 분류와 버전 증분을 결정합니다 — `feat`→`Added`/MINOR, `fix`→`Fixed`/PATCH, 그 외→`Changed`/PATCH, `!` 또는 `BREAKING CHANGE:`→`Changed`/MAJOR. 상세는 commit 단계 가이드 참조.
+
+표기(타입 어휘·제목 형식·분류 이름)는 레포·org 가 선언하면 그 선언이 기본값을 대체합니다. 선언 위치와 해석 순서는 [docs/conventions-slot.md](docs/conventions-slot.md) 참조.
 
 ## 워크트리 분기
 
