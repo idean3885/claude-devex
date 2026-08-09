@@ -83,6 +83,8 @@ config/style-rules/
 └── extensions/   # blog · wiki · poc · issue · dailylog · peer-review · work-review …
 ```
 
+무엇을 AI 티로 보고 무엇을 저자의 취향으로 남길지는 [docs/adr/0001-ai-tell-removal-priority.md](docs/adr/0001-ai-tell-removal-priority.md) 에서 갈랐습니다. 전부 지우면 글에서 사람이 사라집니다.
+
 ## 3. 규칙 자동 적용
 
 작성 원칙과 워크플로우 규칙을 세 시점에 겁니다. 시점마다 막는 실수가 다릅니다.
@@ -110,6 +112,8 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/job-crawler/crawl.js --profile config/job-cra
 
 ticket 단위로 토큰·비용을 추적합니다. worktree-per-task 환경에서 정확히 분리됩니다. `/usage-start · checkpoint · snap · complete · report` 5종을 제공하며, 집계 원리는 [docs/usage-cwd-aggregation.md](docs/usage-cwd-aggregation.md) 를 참조하세요.
 
+추적이 사후 수단이라면 사전 수단은 작업 강도(effort)와 컨텍스트 예산입니다. 어느 작업에 어느 강도를 쓰고 무엇을 세션에 올리지 않을지는 [docs/effort-policy.md](docs/effort-policy.md) 에 있습니다.
+
 ## 로컬 개발
 
 변경은 워크트리에서 작업하고 PR 로 머지합니다. main 직접 push 는 하지 않습니다.
@@ -123,10 +127,14 @@ git worktree add ../claude-ops-agent-{타입}-{번호} -b {타입}/{번호} orig
 
 체인지로그 분류는 변경 설명의 타입 접두에서 유도하며, 유도할 수 없으면 4곳을 갱신하기 전에 멈춥니다. 버전은 [Semantic Versioning](https://semver.org/lang/ko/), 체인지로그는 [Keep a Changelog 1.1.0](https://keepachangelog.com/ko/1.1.0/) 을 따릅니다.
 
+같은 레포의 여러 PR 을 병렬로 볼 때는 `scripts/worktree-create.sh` 로 분기합니다. 분기 판단 기준·state 파일 포맷·경로 컨벤션은 [docs/worktree.md](docs/worktree.md) 에 있습니다.
+
 ## 요구사항
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code)
 - [GitHub CLI](https://cli.github.com/) (`gh`)
+
+외부 CLI 의 인증이 만료되면 비서는 토큰 발급을 권하지 않고 그 서비스의 정식 인증 명령을 제시합니다. 인증을 다시 받아도 되지 않는 작업의 처리까지 [docs/external-auth.md](docs/external-auth.md) 에 정리했습니다.
 
 ## 라이선스
 
