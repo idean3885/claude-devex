@@ -49,6 +49,7 @@ graph LR
 
 - **org-flow**: 여러 레포에 걸친 변경에서 통일 브랜치명·레포별 provider·Git Identity·워크트리를 한 흐름으로 맞춥니다.
 - **provider 시스템**: 이슈 트래커별 동작을 추상화하고 SessionStart 훅이 git remote host 로 자동 감지합니다. provider별 Git Identity 를 커밋 전 자동 검증·수정해, 글로벌 git config 에 의존한 계정 오류를 막습니다.
+- **커밋·체인지로그 컨벤션**: 커밋 타입이 체인지로그 분류와 버전 증분을 결정합니다 (`feat`→`Added`/MINOR, `fix`→`Fixed`/PATCH, `!`·`BREAKING CHANGE:`→MAJOR). 표기(타입 어휘·제목 형식·분류 이름)는 org·repo 가 선언하면 그 선언이 기본값을 대체합니다. 사슬은 [skills/flow/guides/commit.md](skills/flow/guides/commit.md), 선언 위치·해석 순서는 [docs/conventions-slot.md](docs/conventions-slot.md), 결정 배경과 기각한 대안은 [docs/adr/0002-convention-scope-and-ownership.md](docs/adr/0002-convention-scope-and-ownership.md) 에 있습니다.
 
 예를 들어 인증서 자동 갱신 기능은 서로 다른 두 도메인 서비스에 걸칩니다.
 
@@ -119,6 +120,8 @@ git worktree add ../claude-ops-agent-{타입}-{번호} -b {타입}/{번호} orig
 # 커밋 → 브랜치 push → PR → 웹 머지
 ./scripts/post-merge-sync.sh                        # 머지 후 로컬 캐시 동기
 ```
+
+체인지로그 분류는 변경 설명의 타입 접두에서 유도하며, 유도할 수 없으면 4곳을 갱신하기 전에 멈춥니다. 버전은 [Semantic Versioning](https://semver.org/lang/ko/), 체인지로그는 [Keep a Changelog 1.1.0](https://keepachangelog.com/ko/1.1.0/) 을 따릅니다.
 
 ## 요구사항
 
