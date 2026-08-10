@@ -134,7 +134,7 @@ git worktree add ../claude-ops-agent-{타입}-{번호} -b {타입}/{번호} orig
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code)
 - [GitHub CLI](https://cli.github.com/) (`gh`)
 
-외부 CLI 의 인증이 만료되면 비서는 토큰 발급을 권하지 않고 그 서비스의 정식 인증 명령을 제시합니다. 인증을 다시 받아도 되지 않는 작업의 처리까지 [docs/external-auth.md](docs/external-auth.md) 에 정리했습니다.
+외부 CLI 의 인증이 만료되면 비서는 스코프 고정·만료·사람이 값을 만지지 않음이라는 세 속성을 기준으로 자격을 고릅니다. 권한 단위 판단, 서비스별 스코프 실측, 정적 토큰을 쓸 때 채울 조건은 [docs/external-auth.md](docs/external-auth.md) 에 정리했습니다.
 
 ## 라이선스
 
