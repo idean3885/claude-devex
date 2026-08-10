@@ -7,6 +7,10 @@ Thumbs.db
 
 # ops-agent 런타임 상태
 .ops-agent/
+# 단, 편집 후 점검 마커는 커밋 대상 설정이다.
+# 무시하면 워크트리·새 클론마다 마커가 없어 점검이 조용히 꺼진다 (#230 에서 실제로 겪음).
+!.ops-agent/
+!.ops-agent/content-verify.json
 
 # OMC 상태
 .omc/

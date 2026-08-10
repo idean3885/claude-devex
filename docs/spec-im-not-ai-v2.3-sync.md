@@ -84,7 +84,7 @@ AI 티 분류 SSOT(`config/style-rules/base/ai-tells.md`)는 골격을 im-not-ai
 
 4축 골격 유지. 축4(가독성)를 "가독성 + AI 티 정량"으로 확장:
 
-```
+```text
 ### 축 4. 가독성 + AI 티: {PASS|FAIL}
 - 가독성 필수: N/M · 권장: N/M
 - AI 티: S1 {n}건 · S2 {n}건 → 품질등급 {A|B|C|D}

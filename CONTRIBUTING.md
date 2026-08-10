@@ -19,10 +19,10 @@ git worktree add ../claude-ops-agent-{타입}-{번호} -b {타입}/{번호} orig
 
 | 항목 | 정본 |
 |------|------|
-| 버전 기준, 커밋 타입 선언, 체인지로그 분류 | [CLAUDE.md](CLAUDE.md) — 버전 관리 |
-| 변경 시 검증 체크리스트 | [CLAUDE.md](CLAUDE.md) — 변경 시 검증 체크리스트 |
+| 버전 기준, 커밋 타입 선언, 체인지로그 분류 | [CLAUDE.md](CLAUDE.md) 버전 관리 절 |
+| 변경 시 검증 체크리스트 | [CLAUDE.md](CLAUDE.md) 변경 시 검증 체크리스트 절 |
 | 워크트리 분기 판단, state 파일 포맷 | [docs/worktree.md](docs/worktree.md) |
-| 스킬 변경 규칙 | [CLAUDE.md](CLAUDE.md) — 스킬 변경 규칙 |
+| 스킬 변경 규칙 | [CLAUDE.md](CLAUDE.md) 스킬 변경 규칙 절 |
 
 버전은 [Semantic Versioning](https://semver.org/lang/ko/), 체인지로그는 [Keep a Changelog 1.1.0](https://keepachangelog.com/ko/1.1.0/) 을 따릅니다.
 

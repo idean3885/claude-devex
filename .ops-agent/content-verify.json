@@ -1,0 +1,11 @@
+{
+  "include": ["**/*.md"],
+  "exclude": [
+    "node_modules/**",
+    "CHANGELOG.md",
+    "config/style-rules/**",
+    "docs/adr/**",
+    "docs/spec-*.md"
+  ],
+  "note": "산문 문단이 이어지면 표·목록으로 바꿀지 먼저 판단한다. 규칙 본문은 정본 문서로 링크하고 README 에 복제하지 않는다. ADR·spec 은 시점 고정 기록이라 제외 대상이다."
+}

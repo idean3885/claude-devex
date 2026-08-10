@@ -6,7 +6,7 @@
 
 `org-flow` 는 한 ticket 당 한 worktree 를 표준으로 한다 (`worktrees/<repo>/feature-<n>/`). 그러나 Claude Code 는 trace jsonl 파일을 cwd 와 무관하게 **부모 프로젝트 디렉토리 한 곳**에 저장한다.
 
-```
+```text
 cwd: /Users/<user>/git-project/<org>/worktrees/<repo>/feature-NNN/
                             ↓
 trace 저장: ~/.claude/projects/-Users-<user>-git-project-<org>/<sessionUuid>.jsonl
@@ -117,7 +117,7 @@ for tid, v in agg.items():
 
 PoC 시점 실측:
 
-```
+```text
 unique cwds: 96
   project-a 루트:                        9590 assistant entries
   worktrees/project-a-be/feature-NNNN     260 entries  ← #NNNN 작업
