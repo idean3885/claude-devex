@@ -148,7 +148,7 @@ main ────────────────●─────
 
 - [ ] **버전 범프**: VERSION, CHANGELOG.md, plugin.json, marketplace.json 4곳 모두 갱신 확인
 - [ ] 스킬 파일 존재 확인 (`skills/` 전체 + `skills/flow/guides/`)
-- [ ] README.md Mermaid 다이어그램 렌더링 확인
+- [ ] README.md Mermaid 다이어그램(이슈 플로우 1개) 렌더링 확인
 - [ ] CLAUDE.md 템플릿 부분과 프로젝트 부분 구분 유지
 - [ ] 적용 사례 레포에서 스킬이 정상 동작하는지 확인
 
