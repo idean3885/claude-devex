@@ -11,12 +11,14 @@
 | **되돌릴 수 없는 것만 막고, 나머지는 알린다** | 대외비 유출·머지·릴리즈·force push → 실행 전 차단<br>문장 표현 → 규칙을 미리 깔고 어긴 것만 통지 |
 | **근거 없는 규칙은 걸지 않는다** | 규칙마다 출처를 단다 → [규칙의 근거](#규칙의-근거) |
 | **못 갖춘 것은 못 갖췄다고 적는다** | 대응 패턴 없는 칸은 "없음", 지표는 채택·구현 여부를 열로 |
+| **틀린 것은 다음 작업이 읽게 남긴다** | 작업 끝에 교정을 교훈으로 뽑아 자산으로 등재 → [교훈 자산화](docs/lessons.md)<br>재발하면 차단 규칙을 늘리지 않고 원인을 분석한다 |
 
 전부 막으면 일이 멈추고 전부 권고로 두면 안 지켜집니다. 표현을 기계로 판정하면 문맥상 정상인 것까지 걸리고, 자동으로 고쳐 쓰면 뜻이 틀어집니다.
 
 세 번째 기준을 이 문서에도 적용했습니다.
 
 - 효율이 올랐다는 주장은 넣지 않았습니다. 측정한 적이 없습니다
+- 교훈 자산화의 지표는 항목만 정의하고 값은 비워 뒀습니다
 - 적용 범위는 아직 1인입니다
 - 설계 판단의 배경과 되돌린 결정은 [docs/design-philosophy.md](docs/design-philosophy.md) 에 있습니다
 
@@ -271,6 +273,7 @@ flowchart TB
 | [docs/conventions-slot.md](docs/conventions-slot.md) | 커밋·체인지로그 표기 선언 위치와 해석 순서 |
 | [docs/worktree.md](docs/worktree.md) | 워크트리 분기 판단, state 파일 포맷 |
 | [docs/effort-policy.md](docs/effort-policy.md) | 작업 강도, 컨텍스트 예산 |
+| [docs/lessons.md](docs/lessons.md) | 교훈 수집·자산화, 재발 분석, 지표 |
 | [docs/personal-scope.md](docs/personal-scope.md) | 개인 용도 기능 (블로그 발행·방향 조언·토큰 추적·채용 크롤러) |
 | [docs/usage-cwd-aggregation.md](docs/usage-cwd-aggregation.md) | 사용량 집계 원리 |
 | [docs/external-auth.md](docs/external-auth.md) | 외부 서비스 인증, 인증으로 해결되지 않는 작업 |

@@ -92,6 +92,10 @@ provider 파일에 인증 방식, API endpoint, request body 형식, 필드 보�
 8. 브랜치가 있었으면 정리, 없었으면 스킵
 9. workflow.json의 `currentIssues` 맵에서 현재 브랜치 항목 제거 (`del currentIssues[branch]`)
 10. **Extensions 실행**: provider에 post-complete Extensions이 정의되어 있으면 실행
+11. **교훈 수집**: 이 이슈 기간에 기록된 교정 항목을 수집한다 ([../../../docs/lessons.md](../../../docs/lessons.md))
+    - 0건이면 아무것도 만들지 않는다
+    - 기존 교훈과 대조해 신규는 자산화하고, 재발은 분석으로 보낸다. 재발을 가드 추가로 처리하지 않는다
+    - 수집 구현·버킷 경로는 소비 프로젝트가 정한다. 미정의 시 이 단계를 건너뛴다
 
 ## Provider 연동 상세
 

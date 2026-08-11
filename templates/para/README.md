@@ -30,6 +30,12 @@ advisor 엔진이 참조하는 방법론 골격이다. **구조와 규칙(사상
   archives/    # 비활성 이력
 ```
 
+## 교훈 배치
+
+작업에서 얻은 교훈은 `areas` 에 둔다. 기한 없이 계속 적용하는 작업 규범이라 `resources` 가 아니다. `resources` 에 두면 찾아봐야 아는 참고가 되어 재발을 막지 못한다.
+
+규약·수집 시점·재발 분석은 [교훈 자산화](../../docs/lessons.md) 가 정본이다.
+
 ## advisor 연동
 
 - advise 모드: 방향(direction) 대비 현재 Projects·Areas의 정렬을 보고 다음 액션을 제안한다.
