@@ -6,10 +6,11 @@
 Thumbs.db
 
 # ops-agent 런타임 상태
-.ops-agent/
+# 디렉토리가 아니라 내용을 무시한다. 트레일링 슬래시로 막으면 git 이 안으로
+# 내려가지 않아 아래 파일 단위 부정이 듣지 않는다.
+.ops-agent/*
 # 단, 편집 후 점검 마커는 커밋 대상 설정이다.
 # 무시하면 워크트리·새 클론마다 마커가 없어 점검이 조용히 꺼진다 (#230 에서 실제로 겪음).
-!.ops-agent/
 !.ops-agent/content-verify.json
 
 # OMC 상태
