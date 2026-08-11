@@ -62,8 +62,8 @@ primary_repo = state["primaryRepo"]
 
 state_dirty = False
 
-# startedAt: usage 집계의 기준점. start 시점에 1회 기록한다.
-# tz-aware ISO 8601 로 남겨야 finish 단계 usage 위임에서 tz-naive 혼합 비교가 발생하지 않는다.
+# startedAt: 작업 시작 시각. start 시점에 1회 기록한다.
+# tz-aware ISO 8601 로 남겨야 finish 단계에서 tz-naive 혼합 비교가 발생하지 않는다.
 if not state.get("startedAt"):
     from datetime import datetime
     state["startedAt"] = datetime.now().astimezone().isoformat(timespec="seconds")
