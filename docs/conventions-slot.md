@@ -30,7 +30,7 @@ git remote get-url origin   # https://host/<owner>/<repo>.git → owner, repo
 
 ## 해석 순서
 
-```
+```text
 레포 선언  >  org 기본값  >  ops-agent 기본값
 ```
 

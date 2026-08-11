@@ -422,6 +422,14 @@ Good:
 
 ## 검증 체크리스트
 
+자동 판별 `가능` 항목은 `../metrics/readability_count.py` 가 센다. 판정하지 않고 위치와 수치만 낸다.
+
+```bash
+python3 config/style-rules/metrics/readability_count.py README.md docs/*.md
+```
+
+`부분`·`불가` 항목은 구현하지 않는다. 기계가 의도를 읽어야 하므로 과검출이 된다. 상한값은 이 문서가 정본이고 스크립트가 상수로 복제하므로, 값을 고치면 양쪽을 함께 고친다.
+
 검증 시 아래 표를 순서대로 적용한다.
 T·PN 항목은 `tone.md`, `punctuation.md`에서 상세 처방을 본다.
 A~K 항목은 `ai-tells.md` 분류 SSOT를 본다.

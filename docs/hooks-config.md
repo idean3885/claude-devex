@@ -1,6 +1,6 @@
 # hook·설정 레퍼런스
 
-README 의 [3. 규칙 자동 적용](../README.md#3-규칙-자동-적용) 에서 요약한 hook 의 설정 상세와 플러그인 자체 관리 동작입니다. 설계 배경은 [design-philosophy.md](design-philosophy.md) 를 참조하세요.
+README 의 [설치하면 걸리는 것](../README.md#설치하면-걸리는-것) 에서 요약한 표현 규칙 hook 의 설정 상세와 플러그인 자체 관리 동작입니다. 실행 전에 차단하는 규칙은 [action-gate.md](action-gate.md), 설계 배경은 [design-philosophy.md](design-philosophy.md) 를 참조하세요.
 
 ## 표현 가드 룰
 
@@ -44,8 +44,19 @@ README 의 [3. 규칙 자동 적용](../README.md#3-규칙-자동-적용) 에서
 ```
 
 - `include` 생략 시 기본값은 `["**/*.md"]` 입니다.
-- em dash·AI 슬롭 표현은 hook 이 기계 검출해 즉시 플래그합니다.
 - 도메인 특화 검증(예: 이력서 ATS·PDF 동기)은 소비 레포의 프로젝트 스코프 hook 으로 별도 구성합니다.
+- 시점 고정 기록(ADR·spec 스냅샷)은 `exclude` 에 넣습니다. 지난 문장을 지금 기준으로 고치면 기록이 아니게 됩니다.
+
+hook 이 내보내는 검출은 두 종류입니다.
+
+| 종류 | 무엇을 보나 | 구현 |
+|------|-------------|------|
+| 표현 검출 | em dash, AI 슬롭 어휘 | hook 내부 정규식 |
+| 구조 검출 | 문단 길이·산문 연속·시각 요소 주기·목록 항목 수·테이블 열 수·헤딩 레벨·코드 언어 | `config/style-rules/metrics/readability_count.py` |
+
+정규식은 어휘만 봅니다. 산문이 몇 문단 쌓였는지는 세어야 알 수 있어 카운터를 따로 둡니다. 검출 결과가 수치로 실려 오므로 리마인더가 "점검하라" 가 아니라 "여기가 몇이다" 가 됩니다.
+
+카운터가 커버하는 항목과 일부러 빼놓은 항목은 `config/style-rules/base/readability.md` 의 검증 표에 있습니다.
 
 ## 플러그인 자체 관리
 
