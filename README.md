@@ -274,8 +274,7 @@ flowchart TB
 | [docs/worktree.md](docs/worktree.md) | 워크트리 분기 판단, state 파일 포맷 |
 | [docs/effort-policy.md](docs/effort-policy.md) | 작업 강도, 컨텍스트 예산 |
 | [docs/lessons.md](docs/lessons.md) | 교훈 수집·자산화, 재발 분석, 지표 |
-| [docs/personal-scope.md](docs/personal-scope.md) | 개인 용도 기능 (블로그 발행·방향 조언·토큰 추적·채용 크롤러) |
-| [docs/usage-cwd-aggregation.md](docs/usage-cwd-aggregation.md) | 사용량 집계 원리 |
+| [docs/personal-scope.md](docs/personal-scope.md) | 개인 용도 기능 (블로그 발행·방향 조언·채용 크롤러) |
 | [docs/external-auth.md](docs/external-auth.md) | 외부 서비스 인증, 인증으로 해결되지 않는 작업 |
 | [docs/adr/](docs/adr/) | 개별 결정 기록 |
 | [CLAUDE.md](CLAUDE.md) | 이 레포의 작업 규칙 (에이전트가 읽는 정본) |

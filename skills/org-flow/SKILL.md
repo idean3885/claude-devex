@@ -104,7 +104,6 @@ cwd basename 으로 org 이름을 추론한 뒤, 두 위치에서 매니페스�
 | `notify` | submit 단계 PR 알림 | 메신저·웹훅 알림 발송 |
 | `dailylog` | start 검증 (외부 어댑터 정의 시) | 일일 계획 항목 존재 확인 |
 | `apiGuard` | ops-agent:flow 위임 전후 | API 폭주 방지 마커 set/clear |
-| `usage` | start 직후 / finish 직후 | 사용량 추적 시작·완료 (이슈 단위 누적 기록) |
 
 식별자 prefix 컨벤션:
 
@@ -261,23 +260,11 @@ clone-on-demand: 레포가 없으면 bare clone → 워크트리 생성. vcs.xml
 }
 ```
 
-- `startedAt` 은 `scripts/worktree-create.sh` 가 start 시점에 tz-aware ISO 8601 로 1회 자동 기록한다(없을 때만). usage 어댑터의 집계 기준점이며, tz 를 포함하므로 finish 단계에서 tz-naive 혼합 비교가 발생하지 않는다.
+- `startedAt` 은 `scripts/worktree-create.sh` 가 start 시점에 tz-aware ISO 8601 로 1회 자동 기록한다(없을 때만). tz 를 포함하므로 finish 단계에서 tz-naive 혼합 비교가 발생하지 않는다.
 
 **Step 8: provider 가드 clear**
 
 `providers.apiGuard` 정의 시 가드 마커 해제.
-
-**Step 9: usage 추적 시작 (옵션)**
-
-`providers.usage` 어댑터 정의 시 사용량 추적을 시작한다. 추적 단위는 이슈(ticket) 이며 세션이 아니다.
-
-```
-adapter.usage.start(ticket, taskId, label, repos, startedAt)
-```
-
-- 어댑터 미정의 또는 호출 실패 시 silently skip (org-flow 본 흐름은 진행)
-- 이미 같은 ticket 의 추적 항목이 active 면 재시작하지 않음 (이중 시작 방지)
-- 어댑터는 외부 트래커 (usage-tracker 등) 에 위임
 
 ### `/org-flow status`
 
@@ -331,19 +318,6 @@ dirty 발견 시 finish 호출 금지 — 사용자 검토 후 명시적 커밋/
 
 워크트리 제거 + bare clone 삭제 + vcs.xml 정리 + 상태 파일 삭제.
 
-**Step 5: usage 추적 완료 (옵션)**
-
-`providers.usage` 어댑터 정의 시 사용량 추적을 완료 처리한다.
-
-```
-adapter.usage.complete(ticket, taskId, summary, completedAt)
-```
-
-- `summary` 는 finish 단계에서 수집한 작업 결과 요약을 재사용
-- 어댑터 미정의 또는 호출 실패 시 silently skip
-- 어댑터는 외부 트래커 측 리포트 생성·합계 갱신 등을 책임
-- ticket 단위 누적이라 같은 세션 내 여러 이슈가 진행돼도 분리 측정
-
 ## 파이프라인 연동
 
 프로젝트별 파이프라인은 `.ops-agent/project.json` 또는 프로젝트 CLAUDE.md 에서 정의한다.
@@ -363,4 +337,3 @@ ops-agent 의 org-flow 는 범용 골격이며, 프로젝트 레벨에서 매니
 - provider 분기는 매니페스트의 `providers.*` 키로만 결정한다 (하드코딩된 호스트 분기 금지)
 - 하드코딩된 URL, 조직명, 제품명을 본체에 두지 않는다 — 매니페스트로 외부화
 - 매니페스트 부재 시 셋업 마법사 외 경로로 진입하지 않는다
-- usage 추적은 이슈 단위로 정렬한다 — start 직후 시작, finish 직후 완료. 추적 단위가 세션이면 한 세션 내 여러 이슈 분리 불가

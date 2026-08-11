@@ -10,6 +10,11 @@
 
 <!-- bump-version.sh 삽입 지점 -->
 
+## [7.0.0] - 2026-08-11
+
+### Removed
+- **BREAKING** chore!: 사용량 추적 제거 (스킬 5종·집계 문서·org-flow usage 슬롯). 실사용 없음
+
 ## [6.26.0] - 2026-08-11
 
 ### Added

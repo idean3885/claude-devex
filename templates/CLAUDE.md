@@ -48,7 +48,6 @@ Issue → Spec → Implement → Commit → PR
 | `/content-publish` | 블로그 발행 (Jekyll 변환) | "블로그 발행", "publish" |
 | `/cross-verify` | 교차 검증 (의사결정·설계·문서·구현 4축) | "교차 검증", "크로스 체크" |
 | `/advisor` | 방향 프로파일 기준 비판·조언 | "어드바이저", "방향 검토" |
-| `/usage-*` | ticket 단위 토큰·비용 추적 | "사용량 추적", "스냅샷" |
 
 issue · spec · commit · pr 은 별도 스킬이 아니라 `/flow` 내부의 단계 가이드입니다. 단계 진입 시에만 로딩됩니다.
 
