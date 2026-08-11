@@ -113,6 +113,7 @@ claude plugin update ops-agent@ops-agent
 | PreToolUse | 머지·릴리즈·force push·클러스터 변경·리소스 삭제 | **사용자가 세션 허용을 켤 때까지 차단** |
 | PostToolUse | 문서 편집 후 표현·구조 위반 위치와 수치 | 알림 (마커 파일 있을 때만) |
 | Stop → 다음 턴 | 직전 응답의 표현 규칙 위반 | 알림 |
+| Stop | 사용자 발화의 교정 신호를 교훈 후보로 적립 | 기록만 (승격은 `/learn`) |
 
 구조 검출은 문단 길이·산문 연속·시각 요소 주기·목록 항목 수·테이블 열 수·헤딩 레벨·코드 언어를 셉니다. 정규식은 어휘만 보므로 산문이 몇 문단 쌓였는지는 따로 세야 알 수 있습니다.
 
@@ -156,6 +157,7 @@ flowchart LR
 | `/content-write` | 문서 작성 (보고서·명세·검토 자료) | "콘텐츠 작성", "글 작성" |
 | `/content-verify` | 문서 검증 (윤문·AI 티·가독성·톤) | "검증", "가독성 검사" |
 | `/cross-verify` | 교차 검증 (의사결정·설계·문서·구현) | "교차 검증" |
+| `/learn` | 교훈 후보 검토·승격 ([교훈 자산화](docs/lessons.md)) | "learn", "교훈", "레슨 정리" |
 
 개인 용도로만 쓰는 스킬과 스크립트는 [docs/personal-scope.md](docs/personal-scope.md) 에 따로 적었습니다.
 
