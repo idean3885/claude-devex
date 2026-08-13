@@ -31,9 +31,10 @@
  */
 import { execSync } from 'child_process';
 import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir } from 'os';
 import { scanWhatViolations, snippet } from './what-guard-rules.mjs';
+import { detectGitRiskActions } from './git-guard-rules.mjs';
 // 규칙 로딩·공개 여부 판정은 confidential-scan.mjs 와 공유한다.
 // 복제하면 가드와 스캐너의 판정이 갈라진다.
 import {
@@ -175,16 +176,22 @@ if (!DISABLE) {
       // 액션 게이트: 되돌리기 어려운/외부 영향 행위(클러스터 mutation·PR 머지·릴리즈·force push
       // ·리소스 삭제)는 세션 명시 허용 없으면 차단한다. 권한을 추측해 실행하는 사고를 기계적으로 막는다.
       if (!GATE_DISABLE) {
-        const gateResult = runActionGate(command, hookInput.session_id);
+        const gateResult = runActionGate(command, hookInput.session_id, hookInput.cwd);
         if (gateResult.blocked) {
           const header = GATE_DRYRUN
             ? '[ops-agent 액션 게이트 · 드라이런]'
             : '[ops-agent 액션 게이트 · 차단]';
-          const opLines = gateResult.ops.map(o => `  - [${o.category}] ${o.tool} ${o.verb}`).join('\n');
+          // 대체 경로가 있는 룰은 함께 싣는다. 금지만 통보하면 다음 행동이 정해지지 않는다.
+          const opLines = gateResult.ops.map(o => {
+            const head = `  - [${o.category}] ${o.tool} ${o.verb}`;
+            if (!o.why && !o.alt) return head;
+            return `${head}\n      이유: ${o.why}\n      대신: ${o.alt}`;
+          }).join('\n');
           const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || '<plugin-root>';
           const msg = `${header} 되돌리기 어려운/외부 영향 행위를 감지했습니다:\n${opLines}\n\n` +
             `사용자의 명확한 승인 없이는 이런 행위를 실행하지 마세요. 게이트를 사용자에게 전달하고 승인을 받으세요.\n` +
-            `read-only·가역 명령(git commit, 일반 push, gh pr create 등)은 통과합니다.\n` +
+            `read-only·가역 명령(git commit, 브랜치 push, gh pr create 등)은 통과합니다.\n` +
+            `사용자가 \`!\` 로 직접 실행하는 셸 명령은 이 훅을 거치지 않습니다.\n` +
             `사용자 승인 후 세션 허용:\n` +
             `  bash "${pluginRoot}/scripts/action-gate-allow.sh" on\n` +
             `해제: action-gate-allow.sh off · 파이프라인 비활성: OPS_AGENT_ACTION_GATE_DISABLE=1`;
@@ -259,13 +266,15 @@ function runConfidentialGuard(command, cwd) {
   extractFileOption(command, 'file', texts);
   extractShortFileOption(command, 'F', texts);  // git commit -F · gh --body-file 단축
 
-  const cfg = loadConfig();
+  // 대상 디렉토리를 한 번 구해 표면 판정과 diff 검사가 같은 경로를 쓰게 한다.
+  // 규칙 로딩보다 먼저 해소해야 한다. 레포가 선언하는 제외 경로를 읽으려면
+  // 어느 레포인지부터 정해져야 한다.
+  const resolved = resolveCommandCwd(command, cwd);
+
+  const cfg = loadConfig(findRepoRoot(resolved.cwd));
   if (isEmptyConfig(cfg)) {
     return { blocked: false, hits: [] };
   }
-
-  // 대상 디렉토리를 한 번 구해 표면 판정과 diff 검사가 같은 경로를 쓰게 한다.
-  const resolved = resolveCommandCwd(command, cwd);
 
   // 경로를 해소하지 못했으면 커밋 대상 파일을 읽을 수 없다. 통과시키면
   // "검사하지 못함" 이 "검사해서 깨끗함" 과 같아진다. 커밋이면 막는다.
@@ -439,6 +448,22 @@ function extractCwdFromCommand(command, fallbackCwd) {
  * 셸 변수(`cd "$DIR"`)는 훅이 확장할 수 없다. 그런 경우 `ok: false` 로 알린다.
  * 판별 불가를 통과로 취급하면 "검사하지 못함" 과 "검사해서 깨끗함" 이 같아진다.
  */
+/**
+ * `.git` 이 있는 상위 디렉토리를 찾는다. 레포 선언 파일(`.ops-agent/confidential.json`)과
+ * allowPaths 정규식이 맞춰 보는 경로가 둘 다 레포 루트 기준이라 루트가 필요하다.
+ * 서브프로세스를 띄우지 않는다. 이 훅은 매 Bash 호출마다 돈다.
+ */
+function findRepoRoot(startDir) {
+  let dir = startDir;
+  for (let i = 0; dir && i < 40; i++) {
+    if (existsSync(join(dir, '.git'))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
 function resolveCommandCwd(command, fallbackCwd) {
   const cdMatch = command.match(/\bcd\s+["']?([^\s"'&;|]+)["']?/);
   const gitCMatch = command.match(/\bgit\s+-C\s+["']?([^\s"'&;|]+)["']?/);
@@ -637,9 +662,9 @@ function runWhatAbstractionGuard(command) {
 // 한계: `bash deploy.sh` 처럼 스크립트 내부에서 실행되는 명령은 최상위 명령만 보므로 탐지 못 함
 //   (의도된 배포 스크립트 경로는 sanctioned 로 간주). 직접 타이핑하는 ad-hoc 명령을 막는 안전망.
 // verb 세트/플래그 세트는 파일 상단(게이트 호출보다 먼저 초기화되어야 함)에 선언.
-function runActionGate(command, sessionId) {
+function runActionGate(command, sessionId, hookCwd) {
   if (actionGateAllowed(sessionId)) return { blocked: false, ops: [] };
-  const ops = detectGatedActions(command);
+  const ops = detectGatedActions(command, hookCwd);
   return { blocked: ops.length > 0, ops };
 }
 
@@ -661,9 +686,25 @@ function actionGateAllowed(sessionId) {
   return false;
 }
 
-// 게이트 대상 행위 = 클러스터 mutation + 레포 되돌리기 어려운 행위
-function detectGatedActions(command) {
-  return [...detectClusterMutations(command), ...detectRepoActions(command)];
+// 게이트 대상 행위 = 클러스터 mutation + 레포 되돌리기 어려운 행위 + git 위험 조작
+//
+// git 판정은 대상 디렉토리를 알아야 한다. 기본 브랜치도 현재 브랜치도 레포마다 다르므로
+// 명령 문자열만으로는 정해지지 않는다. 표면 판정·diff 검사와 같은 해석기를 써서
+// `cd <path> && git push` 형태가 다른 레포를 보는 사고를 막는다.
+function detectGatedActions(command, hookCwd) {
+  const dir = extractCwdFromCommand(command, hookCwd);
+  const runGit = args => {
+    try {
+      return execSync(`git ${args}`, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 800 });
+    } catch {
+      return null;
+    }
+  };
+  return [
+    ...detectClusterMutations(command),
+    ...detectRepoActions(command),
+    ...detectGitRiskActions(gateSegments(command), { runGit }),
+  ];
 }
 
 // 명령을 체인 세그먼트로 분리하고 선행 env 할당·sudo 를 제거해 각 세그먼트 앞부분을 돌려준다.

@@ -63,7 +63,7 @@ git remote get-url origin   # https://host/<owner>/<repo>.git → owner, repo
 | `inheritMode` | `"live"` \| `"seed"` | 아래 "상속과 시딩" 참조. 기본 `live` |
 | `commitTypes` | string[] | 이 레포·org 가 쓰는 커밋 타입 어휘. 레포에 존재하지 않는 단계는 넣지 않는다 |
 | `subjectFormat` | string | 제목 형식. `{type}` · `{scope}` · `{ticket}` · `{subject}` 치환. 트래커가 번호 접두를 요구하면 여기서 표현한다 |
-| `changelogSections` | object | 6종 분류의 표시 이름. 한국어 섹션명을 쓰는 레포는 값만 바꾼다. 키는 바꾸지 않는다 — 사슬이 키를 기준으로 동작한다 |
+| `changelogSections` | object | 6종 분류의 표시 이름. 한국어 섹션명을 쓰는 레포는 값만 바꾼다. 키는 바꾸지 않는다: 사슬이 키를 기준으로 동작한다 |
 
 모든 키는 선택이다. 없는 키는 상위 계층에서 채워진다.
 
@@ -92,9 +92,9 @@ git remote get-url origin   # https://host/<owner>/<repo>.git → owner, repo
 
 ## 읽는 주체
 
-슬롯은 **commit 단계 진입 시 가이드가 읽는다**. 세션 시작에 주입하지 않는다 — 매 세션 토큰을 쓰면서 대부분의 세션에서 쓰이지 않는다.
+슬롯은 **commit 단계 진입 시 가이드가 읽는다**. 세션 시작에 주입하지 않는다: 매 세션 토큰을 쓰면서 대부분의 세션에서 쓰이지 않는다.
 
-읽고 아무도 소비하지 않는 설정을 만들지 않는다. `overlays/` 가 그 상태다 — 세션 시작에서 로딩되고 "loaded" 만 출력되며 어떤 키도 해석되지 않는다. 슬롯은 소비 주체를 먼저 정하고 도입한다.
+읽고 아무도 소비하지 않는 설정을 만들지 않는다. `overlays/` 가 그 상태다: 세션 시작에서 로딩되고 "loaded" 만 출력되며 어떤 키도 해석되지 않는다. 슬롯은 소비 주체를 먼저 정하고 도입한다.
 
 ## 선언이 없을 때
 

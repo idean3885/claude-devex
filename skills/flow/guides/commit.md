@@ -59,10 +59,10 @@
 
 타입 어휘·제목 형식·체인지로그 분류 이름은 아래 순서로 정한다. 첫 번째로 발견한 것을 쓴다.
 
-1. **선언 슬롯** — `~/.claude/ops-agent/repos/<owner>--<repo>.json`, 없으면 `~/.claude/ops-agent/orgs/<owner>.json` 의 `conventions` 키. `<owner>`·`<repo>` 는 `git remote get-url origin` 에서 얻는다. 스키마와 병합 규칙은 [../../../docs/conventions-slot.md](../../../docs/conventions-slot.md)
-2. **레포 문서 선언** — 레포 `CLAUDE.md` 에 타입 목록이 적혀 있으면 그것
-3. **최근 이력 표본** — 위 둘이 없으면 최근 커밋 제목에서 표기를 추정하고 **사용자에게 확인한 뒤** 쓴다
-4. **기본값** — 전부 없으면 위 기본 목록
+1. **선언 슬롯**: `~/.claude/ops-agent/repos/<owner>--<repo>.json`, 없으면 `~/.claude/ops-agent/orgs/<owner>.json` 의 `conventions` 키. `<owner>`·`<repo>` 는 `git remote get-url origin` 에서 얻는다. 스키마와 병합 규칙은 [../../../docs/conventions-slot.md](../../../docs/conventions-slot.md)
+2. **레포 문서 선언**: 레포 `CLAUDE.md` 에 타입 목록이 적혀 있으면 그것
+3. **최근 이력 표본**: 위 둘이 없으면 최근 커밋 제목에서 표기를 추정하고 **사용자에게 확인한 뒤** 쓴다
+4. **기본값**: 전부 없으면 위 기본 목록
 
 이미 컨벤션이 정착된 레포에 다른 표기를 들이미면 이력 조회와 자동화 결합면이 끊긴다. 그래서 선언이 항상 기본값을 이긴다.
 
@@ -87,20 +87,20 @@
 
 소비 측이 버전만 보고 파괴 변경을 알 수 있어야 한다. 둘 중 하나로 표기한다.
 
-- 제목 접두에 `!` — `feat!: 슬롯 경로 스키마 교체`
-- 본문 푸터에 `BREAKING CHANGE: {설명}` — 대문자 고정. 하이픈 형(`BREAKING-CHANGE`)도 동일하게 취급
+- 제목 접두에 `!`: `feat!: 슬롯 경로 스키마 교체`
+- 본문 푸터에 `BREAKING CHANGE: {설명}`: 대문자 고정. 하이픈 형(`BREAKING-CHANGE`)도 동일하게 취급
 
 `!` 를 쓰면 푸터를 생략할 수 있다. 표기가 있으면 MAJOR 를 올린다. 표기 없이 파괴 변경을 넣으면 소비 측이 마이너 업데이트로 받아 깨진다.
 
 ### 제목 줄 규칙
 
-- **한 줄에 URL 합치지 않는다**. 이슈 링크는 본문 첫 줄에 분리한다 — GitHub PR 카드·이메일 알림·메신저 미리보기에서 제목이 잘리는 사고 재현 방지.
+- **한 줄에 URL 합치지 않는다**. 이슈 링크는 본문 첫 줄에 분리한다: GitHub PR 카드·이메일 알림·메신저 미리보기에서 제목이 잘리는 사고 재현 방지.
 - 제목은 식별·검색용이라 60 자 내외로 짧게. 풀어쓰기는 본문이 담당한다.
 - 사내 프로젝트 컨벤션이 이슈 번호 prefix(`{번호} [범주] ...`) 라면 prefix 만 따른다. URL 은 여전히 본문.
 
 ### What / Why 분리
 
-- `## What` 은 **bullet (`*`) 요약**. "무엇을" 했는지가 한 눈에 들어와야 한다. 구어체 풀어쓰기 금지 — 가독성이 떨어지고 스캔이 어렵다.
+- `## What` 은 **bullet (`*`) 요약**. "무엇을" 했는지가 한 눈에 들어와야 한다. 구어체 풀어쓰기 금지: 가독성이 떨어지고 스캔이 어렵다.
 - `## Why` 는 풀어쓸 이야기(배경·결정 사유·트레이드오프·후속 위임)를 담는다. 항목이 없으면 섹션 생략.
 - What 한 줄은 동사/명사 단위 도메인 행위. 5~12 단어 권장. 코드 산출물(클래스명·메서드명) 금지는 아래 도메인 What 추상화 룰 그대로.
 
@@ -112,7 +112,7 @@
 
 | 위반 | 예 |
 |------|----|
-| 클래스명·메서드명 나열 | `{Domain}{Role}Service 도입 — {methodName} 호출 ...` |
+| 클래스명·메서드명 나열 | `{Domain}{Role}Service 도입: {methodName} 호출 ...` |
 | 어노테이션·프레임워크 키워드 노출 | `@TransactionalEventListener AFTER_COMMIT 으로 처리` |
 | Port/Adapter/UseCase/Listener/Service 같은 헥사고날 어휘 | `{X} Port + Adapter 추가` |
 | 의존성 파일·yaml 키 나열 | `application-{x}.yml 의 {x}.{y}.* 추가` |
@@ -161,7 +161,7 @@
 - [ ] 컨벤션 준수
 - [ ] 불필요한 변경 없음
 - [ ] 민감정보(시크릿, 토큰) 미포함
-- [ ] 대외비 가드(GATE 0) 통과 — [../references/confidential-guard.md](../references/confidential-guard.md)
+- [ ] 대외비 가드(GATE 0) 통과: [../references/confidential-guard.md](../references/confidential-guard.md)
 
 ## 규칙
 

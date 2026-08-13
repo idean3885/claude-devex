@@ -21,7 +21,7 @@
 
 내용을 늘리기 위한 섹션을 두지 않는다.
 
-> **근거**: Strunk & White, *The Elements of Style* Rule 17 — "Omit needless words."
+> **근거**: Strunk & White, *The Elements of Style* Rule 17, "Omit needless words."
 > NNG 웹 가독성 연구에서 독자는 전체 텍스트의 20~28% 만 읽는다(`readability.md` P2 와 같은 출처).
 > 읽히지 않는 분량은 남은 분량의 가시성을 함께 떨어뜨린다.
 

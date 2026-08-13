@@ -1,0 +1,9 @@
+{
+  "$comment": "레포가 선언하는 대외비 가드 제외 경로. allowPaths 만 읽는다. 키워드는 머신 로컬 설정(~/.claude/ops-agent/confidential-keywords.local.json)에만 두며, 레포에 커밋하면 그 파일이 곧 유출이다.",
+  "allowPaths": [
+    "^config/style-rules/"
+  ],
+  "$why": {
+    "^config/style-rules/": "문서 유형 이름을 다루는 자리다. 익스텐션 이름(wiki·issue·blog 등)이 externalOnly 키워드와 글자만 같아 오탐이 난다. 이 레포는 퍼블릭이고 이 경로에 조직 자원이 들어갈 일이 없다."
+  }
+}

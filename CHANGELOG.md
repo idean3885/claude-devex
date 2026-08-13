@@ -10,6 +10,25 @@
 
 <!-- bump-version.sh 삽입 지점 -->
 
+## [7.4.0] - 2026-08-13
+
+### Added
+- feat: 에이전트가 읽는 문서 규칙(`base/authoring.md` AU1~AU6). 사람이 읽는 산문이 아니라 `SKILL.md`·`CLAUDE.md`·가이드를 대상으로 하는 유일한 base 파일
+- feat: 문서 유형 프로필(`extensions/profiles.md`). 익스텐션 9개가 반복하던 적용 대상·적용 강도·합격선 세 절을 표로 흡수. 유형이 늘면 파일이 아니라 행이 하나 는다
+- feat: 장표 익스텐션(`extensions/deck.md`). 새 골격의 첫 사용례
+- feat: `readability.md L5`(비교는 결론과 함께). PoC 전용이던 요구를 전 유형으로 승격
+- feat: `re-pitch` 스킬. 답변이 전달되지 않았을 때 요약이 아니라 재설명을 요구한다
+- feat: git 위험 조작 가드. 기본 브랜치 직접 push 와 `reset --hard`·`clean`·`branch -D`·`restore` 를 액션 게이트로 보낸다. 기본 브랜치는 원격에서 조회하고 이름을 하드코딩하지 않는다
+- feat: 대외비 가드에 레포 선언 층 추가(`.ops-agent/confidential.json`). `allowPaths` 만 읽는다. 키워드는 감추려는 문자열 자체라 레포에 커밋하면 그 파일이 곧 유출이므로 로컬 설정에만 둔다. 제외 경로는 레포의 성질이라 머신을 옮겨도 남아야 한다
+- fix: `readability` 의 `K1~K3`·`B1` 이 `knowledge`·`blog` 의 같은 ID 와 충돌하던 것을 `CJ1~CJ3`·`BQ1` 로 해소. 나머지 76개 ID 는 그대로 둔다
+- fix: `readability` 의 유형별 TL;DR 표가 익스텐션 값과 어긋나 있었다(성과평가 면제 vs 필수, PoC 권장 vs 필수). 익스텐션을 정본으로 두고 중복 표를 걷었다
+- fix: `ai-tells` 의 `J-3`·`J-4` 가 `tone` 규칙을 `readability` 로 잘못 가리켰다
+- fix: `ai-tells` 의 확장 가이드가 폐기된 익스텐션 골격을 안내하고 있었다
+- fix: 이슈 가이드가 구현에 없는 규칙 소스 층(레포 `CLAUDE.md` 대외비 절, 플러그인 내장 기본 패턴)을 안내하고 있었다. 실제 두 자리로 정정
+- docs: ADR 0003. 라우터 스킬과 wizard 스킬 기각 판단과 다시 여는 조건
+- docs: `design-philosophy` 결정 6·7. 규칙 묶음을 구간별로 다르게 처방한 근거와 에이전트 문서 규칙의 자리
+- docs: em dash 121줄 교정(T1). 규칙 예시와 표의 해당 없음 표기는 보존
+
 ## [7.3.0] - 2026-08-12
 
 ### Added
