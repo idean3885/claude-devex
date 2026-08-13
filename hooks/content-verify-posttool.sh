@@ -94,8 +94,32 @@ case "$FP" in
     ;;
 esac
 
+# --- 독자 판정: 에이전트가 읽는 문서면 authoring 축을 함께 지시한다 ---
+#
+# 같은 마크다운이라도 읽는 쪽이 사람인지 모델인지에 따라 걸리는 규칙이 다르다.
+# 네 축(ai-tells·readability·tone·punctuation)은 사람이 읽는 한국어 산문을 다루고
+# authoring(AU1~AU6)은 모델이 읽는 문서를 다룬다. 판정 없이 네 축만 지시하면
+# SKILL.md 를 편집해도 포인터 문구·정보 계층·완료 조건이 점검 대상에 들어오지 않는다.
+#
+# 경로로 판정한다. 파일 내용으로 추론하면 같은 파일이 편집마다 다르게 잡힌다.
+agent_doc=""
+case "$rel" in
+  SKILL.md|*/SKILL.md) agent_doc=1 ;;
+  CLAUDE.md|*/CLAUDE.md|AGENTS.md|*/AGENTS.md) agent_doc=1 ;;
+  skills/*|*/skills/*) agent_doc=1 ;;
+  providers/*|*/providers/*) agent_doc=1 ;;
+  agents/*|*/agents/*) agent_doc=1 ;;
+esac
+
 msg="[content-verify 하네스] ${BASE} 편집됨. 수기 호출 없이 content-verify 관점으로 자가 점검하라: "
 msg="${msg}AI 티(style-rules base/ai-tells), 가독성(readability), 저자 톤(tone), 한국어 구두점(punctuation). "
+if [ -n "$agent_doc" ]; then
+  msg="${msg}[에이전트가 읽는 문서] authoring(base/authoring.md AU1~AU6) 도 함께 적용하라: "
+  msg="${msg}포인터 문구가 갈래당 하나인가(AU1) · 일부 갈래만 쓰는 참조가 단계를 덮고 있는가(AU3) · "
+  msg="${msg}각 단계의 끝을 판별할 수 있고 빠뜨림이 드러나는가(AU4) · 금지형만 있고 목표 동작이 없는 지시가 있는가(AU5) · "
+  msg="${msg}환경을 옮겨 적은 줄과 기본값과 같은 지시가 있는가(AU6). "
+  msg="${msg}두 묶음이 충돌하면 읽는 쪽을 기준으로 authoring 이 이긴다. "
+fi
 msg="${msg}SSOT: ~/.claude/ops-agent/style-rules/. 위반은 즉시 교정, 사실/주장/코드 로직은 보존."
 [ -n "$NOTE" ] && msg="${msg} [프로젝트 노트] ${NOTE}"
 [ -n "$viol" ] && msg="${msg} [표현 검출]${viol}"

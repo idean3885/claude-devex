@@ -10,6 +10,16 @@
 
 <!-- bump-version.sh 삽입 지점 -->
 
+## [7.4.2] - 2026-08-13
+
+### Fixed
+- fix: `authoring`·`deck` 규칙이 적용 시점에 호출되지 않던 배선을 연결. 규칙 파일만 추가하고 그 규칙이 걸릴 순간을 잇지 않아, `SKILL.md` 를 편집해도 `AU1~AU6` 가 자가 점검에 들어오지 않았고 장표를 만들어도 `D1~D4` 가 검증되지 않았다
+  - `hooks/content-verify-posttool.sh` 가 경로로 읽는 쪽을 판정한다. `SKILL.md`·`CLAUDE.md`·`AGENTS.md`·`skills/**`·`providers/**`·`agents/**` 면 `authoring` 축을 함께 지시한다. 파일 내용으로 추론하지 않는다. 같은 파일이 편집마다 다르게 잡히지 않게 하기 위해서다
+  - `skills/content-verify/SKILL.md` 에 읽는 쪽 판정 절과 검증 순서 11번(`AU1~AU6`)을 추가. 유형 판별 표에 장표를 넣어 `extensions/deck.md` 와 `profiles.md` 의 장표 행이 선택되게 했다
+  - 한 파일이 사람과 모델 양쪽에 읽히면 `authoring` 이 이긴다. 그 문서가 존재하는 이유가 모델의 실행이므로 실행 쪽을 지킨다
+- docs: `config/global-md/base.md` 의 `authoring.md` 포인터를 도달 조건이 담긴 문구로 교체. 목록 항목은 무엇이 있는지만 말하고 언제 읽으라고 말하지 않아 발화하지 않았다 (`AU1` 컨텍스트 포인터)
+- docs: README 에 읽는 쪽에 따라 규칙이 갈린다는 사상 항목과 `/re-pitch` 트리거, `authoring` 자동 적용 행 추가
+
 ## [7.4.1] - 2026-08-13
 
 ### Fixed

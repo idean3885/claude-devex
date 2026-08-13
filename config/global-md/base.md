@@ -18,11 +18,11 @@ ops-agent 의 `config/style-rules/{base,extensions}/` 가 모든 한국어 문�
 | `base/tone.md` | 저자 톤 (T1~T17) |
 | `base/punctuation.md` | 한국어 구두점 (PN1~PN6) |
 | `base/length.md` | 산출물 분량 (LN1~LN2) |
-| `base/authoring.md` | 에이전트가 읽는 문서 (AU1~AU6, mattpocock/skills MIT 차용) |
+| `base/authoring.md` | `SKILL.md`·`CLAUDE.md`·가이드·provider 정의를 쓰거나 고칠 때 적용 (AU1~AU6, mattpocock/skills MIT 차용) |
 | `extensions/profiles.md` | 유형별 적용 대상·적용 강도·합격선 정본 |
 | `extensions/{blog,wiki,poc,info,knowledge,issue,deck,dailylog,peer-review,work-review}.md` | 문서 유형별 고유 규칙 |
 
-`base/authoring.md` 만 대상이 다르다. 나머지가 사람이 읽는 한국어 산문을 다루고, 이 파일은 `SKILL.md`·`CLAUDE.md`·가이드처럼 에이전트가 읽는 문서를 다룬다.
+`base/authoring.md` 만 **읽는 쪽**이 다르다. 나머지는 사람이 읽는 한국어 산문을 다루고, 이 파일은 모델이 읽고 실행하는 문서를 다룬다. 한 파일이 양쪽 다 읽는 경우(`SKILL.md` 가 그렇다)에는 두 묶음을 함께 적용하고, 충돌하면 그 문서가 존재하는 이유 쪽인 `authoring` 을 따른다.
 
 표현 가드 hook(`forbidden-words.json`)은 응답을 막거나 재작성하지 않는다.
 
