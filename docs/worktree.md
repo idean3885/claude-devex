@@ -11,7 +11,7 @@
 | 워크트리 생성 | `scripts/worktree-create.sh <state-file>` | clone-on-demand + 워크트리 일괄 생성 + vcs.xml 매핑 |
 | 워크트리 정리 | `scripts/worktree-cleanup.sh` | bare clone 포함 정리 |
 | state 파일 포맷 | `.ops-agent/state/org-flow-{ticket}.json` | 경로 컨벤션 |
-| 하네스 자체 워크트리 | Claude Code `Agent` 도구의 `isolation: "worktree"` | 단발 isolation 작업용 — 위 스크립트와 무관 |
+| 하네스 자체 워크트리 | Claude Code `Agent` 도구의 `isolation: "worktree"` | 단발 isolation 작업용: 위 스크립트와 무관 |
 
 ## 경로 컨벤션
 

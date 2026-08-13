@@ -105,14 +105,39 @@ function isStandaloneAt(text, idx, len) {
   return !(before && WORD_CHAR.test(before)) && !(after && WORD_CHAR.test(after));
 }
 
-export function loadConfig() {
+/**
+ * 레포가 스스로 선언하는 제외 경로를 읽는다.
+ *
+ * 키워드는 머신 로컬 설정에만 두고, 제외 경로는 레포에 둔다. 둘의 성격이 다르다.
+ * 키워드는 감추려는 문자열 자체라 레포에 커밋하면 그 파일이 곧 유출이다.
+ * 제외 경로는 그 레포의 디렉토리 이름 목록이라 공개해도 잃을 것이 없고,
+ * 어느 경로가 그 단어를 정당하게 다루는지는 머신이 아니라 레포의 성질이다.
+ *
+ * 로컬 설정에만 두면 머신을 옮길 때 사라져 같은 커밋이 다시 막힌다.
+ * 그래서 이 층은 레포를 따라다닌다.
+ *
+ * `allowPaths` 만 읽는다. 레포 파일의 keywords·patterns 는 무시한다.
+ */
+export function loadRepoAllowPaths(repoRoot) {
+  if (!repoRoot) return [];
+  const p = join(repoRoot, '.ops-agent', 'confidential.json');
+  if (!existsSync(p)) return [];
+  try {
+    return toRegexArray(JSON.parse(readFileSync(p, 'utf8')).allowPaths);
+  } catch {
+    return [];
+  }
+}
+
+export function loadConfig(repoRoot) {
   const cfgPath = process.env.OPS_AGENT_CONFIDENTIAL_CONFIG_PATH
     || join(homedir(), '.claude', 'ops-agent', 'confidential-keywords.local.json');
+  const repoAllowPaths = loadRepoAllowPaths(repoRoot);
   const empty = {
     keywords: [], patterns: [],
     externalOnly: { keywords: [], patterns: [] },
     personalDevOnly: { keywords: [], patterns: [] },
-    internalHosts: [], allowPaths: [],
+    internalHosts: [], allowPaths: repoAllowPaths,
   };
   if (!existsSync(cfgPath)) return empty;
   try {
@@ -132,7 +157,8 @@ export function loadConfig() {
       },
       internalHosts: toStringArray(raw.internalHosts),
       // 커밋 diff 검사에서 제외할 경로 정규식. 키워드를 정당하게 다루는 문서·설정용.
-      allowPaths: toRegexArray(raw.allowPaths),
+      // 로컬 선언과 레포 선언을 합친다. 어느 쪽도 다른 쪽을 덮지 않는다.
+      allowPaths: [...toRegexArray(raw.allowPaths), ...repoAllowPaths],
     };
   } catch {
     return empty;

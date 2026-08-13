@@ -13,14 +13,26 @@ ops-agent 의 `config/style-rules/{base,extensions}/` 가 모든 한국어 문�
 
 | 파일 | 역할 |
 |------|------|
-| `base/ai-tells.md` | AI 티 분류 (A~J, im-not-ai MIT 차용) |
-| `base/readability.md` | 구조 가독성 (P/H/L/C/V/K/B) |
-| `base/tone.md` | 저자 톤 (T1~T13) |
+| `base/ai-tells.md` | AI 티 분류 (A~K, im-not-ai MIT 차용) |
+| `base/readability.md` | 구조 가독성 (P·H·L·C·V·CJ·BQ) |
+| `base/tone.md` | 저자 톤 (T1~T17) |
 | `base/punctuation.md` | 한국어 구두점 (PN1~PN6) |
 | `base/length.md` | 산출물 분량 (LN1~LN2) |
-| `extensions/{blog,wiki,poc,info,knowledge,issue,dailylog,peer-review,work-review}.md` | 문서 유형별 추가 규칙 |
+| `base/authoring.md` | 에이전트가 읽는 문서 (AU1~AU6, mattpocock/skills MIT 차용) |
+| `extensions/profiles.md` | 유형별 적용 대상·적용 강도·합격선 정본 |
+| `extensions/{blog,wiki,poc,info,knowledge,issue,deck,dailylog,peer-review,work-review}.md` | 문서 유형별 고유 규칙 |
 
-표현 가드 hook(`forbidden-words.json`)은 응답을 막거나 재작성하지 않는다. 룰 목록은 SessionStart 에서 세션당 1회 주입되고, Stop 이 검출한 위반만 다음 턴에 통지된다. 출력 직전 패턴 자가 대조는 어시스턴트가 수행한다. 사용자 추가 룰은 `~/.claude/forbidden-words.local.json` 에 작성하면 머지된다. hook 동작 상세는 ops-agent `docs/hooks-config.md` 참조.
+`base/authoring.md` 만 대상이 다르다. 나머지가 사람이 읽는 한국어 산문을 다루고, 이 파일은 `SKILL.md`·`CLAUDE.md`·가이드처럼 에이전트가 읽는 문서를 다룬다.
+
+표현 가드 hook(`forbidden-words.json`)은 응답을 막거나 재작성하지 않는다.
+
+| 시점 | 동작 |
+|------|------|
+| SessionStart | 룰 목록을 세션당 1회 주입 |
+| 출력 직전 | 어시스턴트가 패턴을 자가 대조 |
+| Stop | 검출된 위반만 다음 턴에 통지 |
+
+사용자 추가 룰은 `~/.claude/forbidden-words.local.json` 에 작성하면 머지된다. hook 동작 상세는 ops-agent `docs/hooks-config.md` 참조.
 
 ## 어시스턴트 발화 분량
 

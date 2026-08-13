@@ -28,10 +28,14 @@ provider 파일에 인증 방식, API endpoint, request body 형식, 필드 보�
 
 히트 시 하드 차단하고 사용자에게 정정 요청. 훅(`scripts/pre-tool-use.mjs`)이 최종 방어선이지만, 가이드 단계에서 미리 키워드를 피해 작성하여 훅 단계까지 끌고 가지 않는다.
 
-**키워드 소스 우선순위**:
-1. `~/.claude/ops-agent/confidential-keywords.local.json` (로컬, 조직 특화)
-2. 현재 레포 `CLAUDE.md`의 "대외비" 섹션 (레포 특화)
-3. 기본 패턴 (플러그인 내장, 일반 원칙)
+**규칙 소스**:
+
+| 자리 | 담는 것 | 왜 거기인가 |
+|------|---------|-------------|
+| `~/.claude/ops-agent/confidential-keywords.local.json` | 키워드·패턴·internalHosts·allowPaths | 키워드는 감추려는 문자열 자체라 레포에 커밋하면 그 파일이 곧 유출이다 |
+| 레포 루트 `.ops-agent/confidential.json` | `allowPaths` 만 | 어느 경로가 그 단어를 정당하게 다루는지는 머신이 아니라 레포의 성질이다. 로컬에만 두면 머신을 옮길 때 사라져 같은 커밋이 다시 막힌다 |
+
+두 자리의 `allowPaths` 는 합쳐진다. 레포 파일의 키워드·패턴은 읽지 않는다.
 
 ## 서브커맨드
 

@@ -15,7 +15,7 @@ description: 멀티레포 오케스트레이션 + 사내/퍼블릭 provider 분�
 
 - "/org-flow", "org-flow", "멀티레포", "multi-repo", "org 셋업"
 
-## 최초 호출 — 셋업 마법사
+## 최초 호출: 셋업 마법사
 
 cwd basename 으로 org 이름을 추론한 뒤, 두 위치에서 매니페스트를 조회한다.
 
@@ -39,7 +39,7 @@ cwd basename 으로 org 이름을 추론한 뒤, 두 위치에서 매니페스�
 
 **Step 3: 프로젝트 로컬 매니페스트 안내**
 
-`.ops-agent/project.json` 이 없으면 멀티레포 구조 정의를 안내한다 (repos / domains / worktreeRoot — "전제조건" 섹션 참조).
+`.ops-agent/project.json` 이 없으면 멀티레포 구조 정의를 안내한다 (repos / domains / worktreeRoot: "전제조건" 섹션 참조).
 
 **Step 4: 셋업 종료**
 
@@ -133,7 +133,7 @@ org-flow     — 스코핑 + 관련 레포 워크트리 + 파이프라인 추적
 
 | 책임 | 담당 |
 |------|------|
-| 이슈 생성/시작/완료 | `ops-agent:flow` — **org-flow가 직접 수행 금지** |
+| 이슈 생성/시작/완료 | `ops-agent:flow`: **org-flow가 직접 수행 금지** |
 | 스코핑 (영향 레포 산정) | org-flow |
 | 관련 레포 워크트리 생성 | org-flow (`scripts/worktree-create.sh`) |
 | 파이프라인 실행 (구현/검증) | org-flow → 프로젝트 스킬 |
@@ -298,7 +298,7 @@ clone-on-demand: 레포가 없으면 bare clone → 워크트리 생성. vcs.xml
 
 cleanup 은 `git worktree remove --force` + `shutil.rmtree(ignore_errors=True)` 로 untracked·modified 파일을 무조건 삭제한다. 진입 전 현재 티켓의 워크트리만 대상으로 dirty 검사 권장 (`git status --porcelain` 비어 있어야 PASS).
 
-dirty 발견 시 finish 호출 금지 — 사용자 검토 후 명시적 커밋/푸시 또는 폐기 동의 필요.
+dirty 발견 시 finish 호출 금지: 사용자 검토 후 명시적 커밋/푸시 또는 폐기 동의 필요.
 
 **Step 3: ops-agent:flow 위임 (GATE)**
 
@@ -335,5 +335,5 @@ ops-agent 의 org-flow 는 범용 골격이며, 프로젝트 레벨에서 매니
 - ops-agent:flow 위임 없이 이슈 트래커 API 를 직접 호출하지 않는다
 - 워크트리 생성/정리는 스크립트로 원자 실행한다
 - provider 분기는 매니페스트의 `providers.*` 키로만 결정한다 (하드코딩된 호스트 분기 금지)
-- 하드코딩된 URL, 조직명, 제품명을 본체에 두지 않는다 — 매니페스트로 외부화
+- 하드코딩된 URL, 조직명, 제품명을 본체에 두지 않는다: 매니페스트로 외부화
 - 매니페스트 부재 시 셋업 마법사 외 경로로 진입하지 않는다

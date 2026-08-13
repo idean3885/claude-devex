@@ -111,6 +111,7 @@ claude plugin update ops-agent@ops-agent
 | PreToolUse | 대외비 키워드가 공개 표면으로 나가는 명령 | **실행 전 차단** |
 | PreToolUse | 커밋·PR·이슈 본문의 구현 세부 서술 | **실행 전 차단** |
 | PreToolUse | 머지·릴리즈·force push·클러스터 변경·리소스 삭제 | **사용자가 세션 허용을 켤 때까지 차단** |
+| PreToolUse | 기본 브랜치 직접 push, `reset --hard`·`clean -f`·`branch -D`·`restore` | **사용자가 세션 허용을 켤 때까지 차단** |
 | PostToolUse | 문서 편집 후 표현·구조 위반 위치와 수치 | 알림 (마커 파일 있을 때만) |
 | Stop → 다음 턴 | 직전 응답의 표현 규칙 위반 | 알림 |
 | Stop | 사용자 발화의 교정 신호를 교훈 후보로 적립 | 기록만 (승격은 `/learn`) |
@@ -198,7 +199,7 @@ graph LR
 
 ## 규칙의 근거
 
-한국어 문서 작성 규칙은 `config/style-rules/` 에 있고, 규칙마다 출처를 달았습니다.
+작성 규칙은 `config/style-rules/` 에 있고, 규칙마다 출처를 달았습니다. `base/` 는 사람이 읽는 한국어 산문을 다루고, `base/authoring.md` 하나만 에이전트가 읽는 문서(`SKILL.md`·`CLAUDE.md`·가이드)를 다룹니다. 유형별 적용 대상·적용 강도·합격선은 [`extensions/profiles.md`](config/style-rules/extensions/profiles.md) 가 정본입니다.
 
 | 규칙 | 근거 |
 |------|------|
@@ -206,6 +207,7 @@ graph LR
 | 번역투 판정 (`base/ai-tells.md`) | 국내 번역학 연구자들이 정리한 번역투 8유형 + Toury 1995(interference), Baker 1993(normalisation), Toral 2019(post-editese). 유형별 문헌 대응은 [references/scholarship.md](config/style-rules/references/scholarship.md) |
 | AI 티 분류 골격 (A~J) | [`epoko77-ai/im-not-ai`](https://github.com/epoko77-ai/im-not-ai) (MIT) 차용. K(감정체·의인화)는 자체 확장 |
 | 정량 지표 14개 | 번역학 3분류로 인코딩. 채택·구현 여부를 표에 명시. [metrics/metrics-spec.md](config/style-rules/metrics/metrics-spec.md) |
+| 에이전트가 읽는 문서 (`base/authoring.md`) | [`mattpocock/skills`](https://github.com/mattpocock/skills) 의 `writing-for-agents` (MIT) 차용. 한국어·이 레포 맥락의 판정과 예시는 자체 작성 |
 | 톤·구두점·분량 (`base/tone.md` 등) | 자체 작성 |
 
 문헌 근거와 지표 정의는 세션 시작 미러 대상이 아닙니다. 세션 예산을 지키기 위해 추적이 필요할 때만 참조합니다.
