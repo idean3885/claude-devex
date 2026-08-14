@@ -45,7 +45,8 @@ if not signals:
 # 턴 중간에 끼워 넣은 발화는 type=user 가 아니라 queue-operation(operation=enqueue) 으로 기록된다.
 # 그쪽이 교정일 확률이 오히려 높으므로 함께 본다.
 SKIP_MARKERS = ("<local-command", "<system-reminder", "<command-name", "<bash-input",
-                "<bash-stdout", "This session is being continued")
+                "<bash-stdout", "<task-notification", "[SYSTEM NOTIFICATION",
+                "This session is being continued")
 last_text = ""
 session_id = ""
 with open(transcript) as f:
