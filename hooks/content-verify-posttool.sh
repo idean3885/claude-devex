@@ -111,6 +111,50 @@ case "$rel" in
   agents/*|*/agents/*) agent_doc=1 ;;
 esac
 
+# --- 발행물 판정: 대상 레포의 하우스 규칙을 편집 시점에 띄운다 ---
+#
+# 하우스 규칙(front matter 필수 필드·요약 블록 마크업·필수 푸터·날짜 규칙)을 지키는
+# 로직은 content-publish Phase 5 에 있다. 그런데 그 스킬을 거치지 않고 파일을 직접
+# 만드는 경로(수기 작성·다른 스킬 경유·직접 편집)에는 아무 backstop 이 없어서,
+# 규칙 누락이 발행 직전 사람 눈에서야 잡힌다. 집행 지점에서 규칙의 소재를 알린다.
+post_doc=""
+post_root=""
+case "$rel" in
+  _posts/*.md|*/_posts/*.md) post_doc=1 ;;
+esac
+if [ -n "$post_doc" ]; then
+  d=$(dirname "$FP")
+  while [ "$d" != "/" ] && [ -n "$d" ]; do
+    if [ -d "$d/_posts" ]; then post_root="$d"; break; fi
+    d=$(dirname "$d")
+  done
+fi
+
+# 미래 날짜는 기계적으로 판정한다. Jekyll `future: false` 에서 빌드 제외 → 배포 404 이고,
+# 발행 후에 발견하면 되돌리는 비용이 크다. 나머지 규칙은 대상 CLAUDE.md 로 보낸다.
+post_note=""
+if [ -n "$post_doc" ]; then
+  post_note=$(python3 - "$FP" <<'PY' 2>/dev/null || true
+import datetime, re, sys
+try:
+    head = open(sys.argv[1], encoding="utf-8").read(2000)
+except OSError:
+    sys.exit(0)
+m = re.search(r"^date:\s*(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})\s*([+-]\d{4})?", head, re.M)
+if not m:
+    print("front matter `date` 없음. 대상 레포 규칙 확인 필요")
+    sys.exit(0)
+tz = m.group(2) or "+0900"
+stamp = datetime.datetime.strptime(
+    f"{m.group(1).replace('T', ' ')} {tz}", "%Y-%m-%d %H:%M:%S %z")
+now = datetime.datetime.now(stamp.tzinfo)
+if stamp > now:
+    print(f"date 가 미래다 ({stamp:%Y-%m-%d %H:%M:%S %z} > 현재 {now:%Y-%m-%d %H:%M:%S %z}). "
+          "Jekyll future:false 에서 빌드 제외되어 배포 404 가 난다. 현재보다 과거로 내려라")
+PY
+)
+fi
+
 msg="[content-verify 하네스] ${BASE} 편집됨. 수기 호출 없이 content-verify 관점으로 자가 점검하라: "
 msg="${msg}AI 티(style-rules base/ai-tells), 가독성(readability), 저자 톤(tone), 한국어 구두점(punctuation). "
 if [ -n "$agent_doc" ]; then
@@ -119,6 +163,16 @@ if [ -n "$agent_doc" ]; then
   msg="${msg}각 단계의 끝을 판별할 수 있고 빠뜨림이 드러나는가(AU4) · 금지형만 있고 목표 동작이 없는 지시가 있는가(AU5) · "
   msg="${msg}환경을 옮겨 적은 줄과 기본값과 같은 지시가 있는가(AU6). "
   msg="${msg}두 묶음이 충돌하면 읽는 쪽을 기준으로 authoring 이 이긴다. "
+fi
+if [ -n "$post_doc" ]; then
+  msg="${msg}[발행물] 대상 레포의 하우스 규칙을 적용하라"
+  if [ -n "$post_root" ] && [ -f "$post_root/CLAUDE.md" ]; then
+    msg="${msg} (정본: ${post_root}/CLAUDE.md 포스팅 규칙)"
+  fi
+  msg="${msg}: front matter 필수 필드 · 요약 블록 마크업(테마 고유 형식이 있으면 범용 헤딩보다 우선) · "
+  msg="${msg}본문 최하단 필수 표기 · date 규칙. 이 네 가지는 범용 기본값과 다를 수 있다. "
+  msg="${msg}content-publish 를 거치지 않은 경로에서도 동일하게 적용된다. "
+  [ -n "$post_note" ] && msg="${msg}[date 검출] ${post_note} "
 fi
 msg="${msg}SSOT: ~/.claude/ops-agent/style-rules/. 위반은 즉시 교정, 사실/주장/코드 로직은 보존."
 [ -n "$NOTE" ] && msg="${msg} [프로젝트 노트] ${NOTE}"

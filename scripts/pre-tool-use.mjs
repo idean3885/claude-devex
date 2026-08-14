@@ -188,13 +188,16 @@ if (!DISABLE) {
             return `${head}\n      이유: ${o.why}\n      대신: ${o.alt}`;
           }).join('\n');
           const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || '<plugin-root>';
+          // 이 메시지는 자립해야 한다. 정본 절차(GATE 3)는 flow 스킬 안에 있어 /flow 를
+          // 거치지 않은 세션에는 로딩되지 않는다. 게이트가 발동하는 순간 컨텍스트에 있다고
+          // 보장되는 것은 이 문자열뿐이므로, 실행 주체·형식·차단 사실을 여기서 다 말한다.
           const msg = `${header} 되돌리기 어려운/외부 영향 행위를 감지했습니다:\n${opLines}\n\n` +
-            `사용자의 명확한 승인 없이는 이런 행위를 실행하지 마세요. 게이트를 사용자에게 전달하고 승인을 받으세요.\n` +
+            `게이트 개방은 사용자만 실행할 수 있습니다. 아래를 그대로 제시하고 기다리세요:\n` +
+            `  !bash "${pluginRoot}/scripts/action-gate-allow.sh" on\n\n` +
+            `어시스턴트가 이 스크립트를 실행하면 자기 수정으로 차단됩니다. 정상 동작이며 우회하지 않습니다.\n` +
+            `자연어 승인("승인합니다"·"머지 승인" 등)은 게이트를 열지 않습니다. 마커 파일 생성만이 개방 신호입니다.\n` +
             `read-only·가역 명령(git commit, 브랜치 push, gh pr create 등)은 통과합니다.\n` +
-            `사용자가 \`!\` 로 직접 실행하는 셸 명령은 이 훅을 거치지 않습니다.\n` +
-            `사용자 승인 후 세션 허용:\n` +
-            `  bash "${pluginRoot}/scripts/action-gate-allow.sh" on\n` +
-            `해제: action-gate-allow.sh off · 파이프라인 비활성: OPS_AGENT_ACTION_GATE_DISABLE=1`;
+            `전체 절차: docs/action-gate.md · 해제: action-gate-allow.sh off · 파이프라인 비활성: OPS_AGENT_ACTION_GATE_DISABLE=1`;
           if (GATE_DRYRUN) {
             process.stderr.write(msg + '\n');
           } else {

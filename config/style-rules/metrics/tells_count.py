@@ -25,6 +25,7 @@
     trailing_comma_conjunction_count  → C-5 연결어미 뒤 쉼표 (S1)
     comma_ratio                       → C-6 쉼표 포함률 과다 (S2)
     antithesis_count                  → C-10 대칭 대구 (S1 구조 게이트, 신규)
+    em_dash_count                     → T1 em dash (S1, 합격선 0)
 
 한국어 처리 근사:
     - 어절: 공백 기준 분리 후 양끝 구두점 제거
@@ -317,6 +318,27 @@ def antithesis_count(text: str) -> int:
 
 
 # ---------------------------------------------------------------------------
+# 9. em_dash_count — T1 em dash (S1)
+# ---------------------------------------------------------------------------
+
+_EM_DASH_RE = re.compile("[—―]")
+
+
+def em_dash_count(text: str) -> int:
+    """T1 em dash(—·―) 카운트.
+
+    tone.md T1 은 위치 조건이 없다. 산문뿐 아니라 목록 항목의 구분자,
+    표 셀, 인용에 쓰인 것도 위반이다. strip_code 를 거친 텍스트에 적용하므로
+    코드 블록·인라인 코드의 `--` 계열은 대상에서 빠진다.
+
+    0 이 합격선이다. 대체 형식은 괄호·쉼표·줄바꿈.
+    """
+    if not text:
+        return 0
+    return len(_EM_DASH_RE.findall(text))
+
+
+# ---------------------------------------------------------------------------
 # 집계
 # ---------------------------------------------------------------------------
 
@@ -342,6 +364,7 @@ def compute_all(text: str, strip_code_blocks: bool = True) -> dict[str, Any]:
                 trailing_comma_conjunction_count(scan),                  # C-5
             "comma_ratio": comma_ratio(scan),                            # C-6
             "antithesis_count": antithesis_count(scan),                  # C-10
+            "em_dash_count": em_dash_count(scan),                        # T1
         },
         "thresholds": {
             "change_rate_warn": CHANGE_RATE_WARN,
