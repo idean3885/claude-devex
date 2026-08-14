@@ -10,6 +10,7 @@
 > - 한국어 구두점(PN1~PN6) → [`punctuation.md`](./punctuation.md)
 > - AI 티 분류(A~K) → [`ai-tells.md`](./ai-tells.md)
 > - 산출물 분량(LN1~LN2) → [`length.md`](./length.md)
+> - 문서의 목적과 범위(PU1~PU5) → [`purpose.md`](./purpose.md)
 > - 문서 유형별 적용 강도 → [`../extensions/{유형}.md`](../extensions/)
 
 ---
