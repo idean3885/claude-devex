@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# PostToolUse hook (opt-in): 콘텐츠 파일 편집 직후 content-verify 자가 수행을 유도한다.
+# PostToolUse hook: 콘텐츠 파일 편집 직후 content-verify 자가 수행을 유도한다.
 # 수기 호출 없이도 AI 티·가독성·톤·구두점 검증이 걸리게 하는 것이 목적이다.
 #
-# opt-in 방식: 프로젝트 루트(또는 상위)에 .ops-agent/content-verify.json 마커가 있을 때만 작동한다.
-# 마커가 없으면 조용히 종료한다 (모든 프로젝트 .md 편집마다 리마인더가 뜨는 노이즈 방지).
+# 발동 조건은 둘 중 하나다.
+#   1. opt-in 마커: 프로젝트 루트(또는 상위)에 .ops-agent/content-verify.json 이 있다.
+#      마커가 없으면 조용히 종료한다 (모든 프로젝트 .md 편집마다 리마인더가 뜨는 노이즈 방지).
+#   2. 발행물 경로: `_posts/` 아래 마크다운이면 마커 없이도 발동한다.
+#      경로가 곧 "발행 대상" 신호라 노이즈 위험이 다르고, 이 갈래에까지 opt-in 을 요구하면
+#      backstop 이 가장 필요한 레포일수록 마커가 없어 조용히 꺼진다.
 #
 # 마커 스키마 (.ops-agent/content-verify.json):
 #   {
@@ -22,9 +26,25 @@ command -v jq >/dev/null 2>&1 || exit 0
 FP=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 [ -z "$FP" ] && exit 0
 
+# --- 발행물 판정: 마커 탐색보다 먼저 한다 ---
+# 마커 없이도 통과하는 유일한 갈래이므로 게이트 앞에 둔다.
+post_doc=""
+post_root=""
+case "$FP" in
+  */_posts/*.md) post_doc=1 ;;
+esac
+if [ -n "$post_doc" ]; then
+  d=$(dirname "$FP")
+  while [ "$d" != "/" ] && [ -n "$d" ]; do
+    if [ -d "$d/_posts" ]; then post_root="$d"; break; fi
+    d=$(dirname "$d")
+  done
+fi
+
 # --- 마커 탐색: FP 디렉토리부터 위로 올라가며 .ops-agent/content-verify.json 을 찾는다 ---
 dir=$(dirname "$FP")
 marker=""
+root=""
 while [ "$dir" != "/" ] && [ -n "$dir" ]; do
   if [ -f "$dir/.ops-agent/content-verify.json" ]; then
     marker="$dir/.ops-agent/content-verify.json"
@@ -33,12 +53,20 @@ while [ "$dir" != "/" ] && [ -n "$dir" ]; do
   fi
   dir=$(dirname "$dir")
 done
-[ -z "$marker" ] && exit 0
+if [ -z "$marker" ]; then
+  # 마커가 없으면 발행물 갈래만 남고 나머지는 종료한다.
+  [ -z "$post_doc" ] && exit 0
+  root="${post_root:-$(dirname "$FP")}"
+fi
 
 # --- include/exclude glob 매칭 (마커 기준 상대 경로) ---
+# 마커가 없는 발행물 갈래에는 판정할 설정이 없으므로 통과시킨다.
+# 마커가 있으면 발행물이어도 exclude 를 존중한다. 명시적 설정은 사람의 판단이다.
 rel="${FP#"$root"/}"
+NOTE=""
 
-MATCH=$(MARKER="$marker" REL="$rel" python3 <<'PYEOF'
+if [ -n "$marker" ]; then
+  MATCH=$(MARKER="$marker" REL="$rel" python3 <<'PYEOF'
 import json, os, fnmatch, sys
 marker = os.environ["MARKER"]
 rel = os.environ["REL"]
@@ -57,9 +85,10 @@ def m(globs):
 print("yes" if (m(include) and not m(exclude)) else "no")
 PYEOF
 )
-[ "$MATCH" != "yes" ] && exit 0
+  [ "$MATCH" != "yes" ] && exit 0
+  NOTE=$(MARKER="$marker" python3 -c 'import json,os;print(json.load(open(os.environ["MARKER"])).get("note","") or "")' 2>/dev/null || true)
+fi
 
-NOTE=$(MARKER="$marker" python3 -c 'import json,os;print(json.load(open(os.environ["MARKER"])).get("note","") or "")' 2>/dev/null || true)
 BASE="${FP##*/}"
 
 # --- 표현 검출 (즉시 잡히는 어휘 위반) ---
@@ -111,25 +140,14 @@ case "$rel" in
   agents/*|*/agents/*) agent_doc=1 ;;
 esac
 
-# --- 발행물 판정: 대상 레포의 하우스 규칙을 편집 시점에 띄운다 ---
+# --- 발행물: 대상 레포의 하우스 규칙을 편집 시점에 띄운다 ---
 #
 # 하우스 규칙(front matter 필수 필드·요약 블록 마크업·필수 푸터·날짜 규칙)을 지키는
 # 로직은 content-publish Phase 5 에 있다. 그런데 그 스킬을 거치지 않고 파일을 직접
 # 만드는 경로(수기 작성·다른 스킬 경유·직접 편집)에는 아무 backstop 이 없어서,
 # 규칙 누락이 발행 직전 사람 눈에서야 잡힌다. 집행 지점에서 규칙의 소재를 알린다.
-post_doc=""
-post_root=""
-case "$rel" in
-  _posts/*.md|*/_posts/*.md) post_doc=1 ;;
-esac
-if [ -n "$post_doc" ]; then
-  d=$(dirname "$FP")
-  while [ "$d" != "/" ] && [ -n "$d" ]; do
-    if [ -d "$d/_posts" ]; then post_root="$d"; break; fi
-    d=$(dirname "$d")
-  done
-fi
-
+# post_doc·post_root 판정은 마커 게이트 앞에서 이미 끝났다.
+#
 # 미래 날짜는 기계적으로 판정한다. Jekyll `future: false` 에서 빌드 제외 → 배포 404 이고,
 # 발행 후에 발견하면 되돌리는 비용이 크다. 나머지 규칙은 대상 CLAUDE.md 로 보낸다.
 post_note=""
