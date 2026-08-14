@@ -157,6 +157,8 @@ fi
 
 msg="[content-verify 하네스] ${BASE} 편집됨. 수기 호출 없이 content-verify 관점으로 자가 점검하라: "
 msg="${msg}AI 티(style-rules base/ai-tells), 가독성(readability), 저자 톤(tone), 한국어 구두점(punctuation). "
+msg="${msg}구조를 먼저 본다: 문서가 세운 전제와 문서의 구성 방식이 어긋나는 쌍이 있는가(purpose PU5). "
+msg="${msg}걸리면 통째로 빠질 절이므로 문장 교정보다 이쪽이 먼저다. "
 if [ -n "$agent_doc" ]; then
   msg="${msg}[에이전트가 읽는 문서] authoring(base/authoring.md AU1~AU6) 도 함께 적용하라: "
   msg="${msg}포인터 문구가 갈래당 하나인가(AU1) · 일부 갈래만 쓰는 참조가 단계를 덮고 있는가(AU3) · "
