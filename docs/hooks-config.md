@@ -31,9 +31,16 @@ README 의 [설치하면 걸리는 것](../README.md#설치하면-걸리는-것)
 
 신규 패턴은 먼저 `base/ai-tells.md` 분류 체계에 카테고리 ID 를 부여하고, S1 으로 판정될 때 등록합니다.
 
-## content-verify 자동 점검 (opt-in)
+## content-verify 자동 점검
 
-문서 편집(Edit/Write) 직후 content-verify 관점(AI 티·가독성·톤·구두점) 자가 점검을 유도하는 PostToolUse hook 입니다. 프로젝트 루트에 마커 파일(`.ops-agent/content-verify.json`)이 있을 때만 작동합니다.
+문서 편집(Edit/Write) 직후 content-verify 관점(AI 티·가독성·톤·구두점) 자가 점검을 유도하는 PostToolUse hook 입니다. 발동 조건은 둘 중 하나입니다.
+
+| 조건 | 동작 |
+|------|------|
+| 프로젝트 루트(또는 상위)에 마커 파일 `.ops-agent/content-verify.json` | 마커의 `include`/`exclude`/`note` 를 적용해 작동 |
+| 편집 대상이 `_posts/` 아래 마크다운 | 마커 없이도 작동 (발행물 갈래) |
+
+마커는 모든 프로젝트의 `.md` 편집마다 리마인더가 뜨는 노이즈를 막는 장치입니다. `_posts/` 는 경로가 곧 발행 대상이라는 신호라 노이즈 위험이 다르고, 이 갈래에까지 opt-in 을 요구하면 발행 규칙 backstop 이 가장 필요한 레포일수록 마커가 없어 조용히 꺼집니다. 마커가 있으면서 `exclude` 로 `_posts` 를 뺀 경우는 그 설정을 존중해 발동하지 않습니다.
 
 ```json
 {

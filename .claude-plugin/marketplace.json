@@ -12,7 +12,7 @@
     {
       "name": "ops-agent",
       "description": "AI-Native Development Workflow — Issue Flow with pluggable providers",
-      "version": "7.7.0",
+      "version": "7.7.1",
       "author": {
         "name": "idean3885"
       },
