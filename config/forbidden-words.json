@@ -84,6 +84,36 @@
       "replacement": "조건/구성/지표/측정 대상/구간 중 가리키는 실물",
       "reason": "AI 티. 추상 차원 명사가 실물 명사 자리를 차지한다. 단독 단어만 대상이고 압축·구축·축소 계열과 그래프 좌표축(x축)은 제외",
       "taxonomyId": "ai-tells.md D-16"
+    },
+    {
+      "pattern": "갈립니다|갈린다|갈리는|갈려서|갈렸|가릅니다|가른다|가르는",
+      "replacement": "나누다/분할하다/경우에 따라 달라지다",
+      "reason": "물리 분할 동사로 추상 관계 서술 (관용구로 통하나 대체어가 1:1 로 있다)",
+      "taxonomyId": "tone.md T8"
+    },
+    {
+      "pattern": "뽑아내|뽑아낸|뽑아낼|뽑아서|뽑는다|뽑습니다|뽑을 수",
+      "replacement": "추출하다 (물리 대상이면 그대로: 케이블을 뽑다)",
+      "reason": "물리 추출 동사로 데이터·필드 획득 서술",
+      "taxonomyId": "tone.md T8"
+    },
+    {
+      "pattern": "경계 너머|경계를 넘어",
+      "replacement": "다른 <대상>으로 (서비스 사이로 등 실물 지목)",
+      "reason": "공간 은유가 실제 관계를 대신한다",
+      "taxonomyId": "ai-tells.md D-16"
+    },
+    {
+      "pattern": "(^|\\s)하방($|[\\s으로은이의])",
+      "replacement": "하향/감소",
+      "reason": "공간 방향 명사가 실물 서술을 대신한다",
+      "taxonomyId": "ai-tells.md D-16"
+    },
+    {
+      "pattern": "비자바|비파이썬|비자바스크립트|비코틀린|비[A-Za-z]",
+      "replacement": "자바가 아닌/타 언어 (부정 접두 조어를 풀어 쓴다)",
+      "reason": "non-X 직역. 한국어에 없는 조어법",
+      "taxonomyId": "tone.md T9"
     }
   ]
 }

@@ -26,3 +26,7 @@ Thumbs.db
 *.swo
 *~
 .orphaned_at
+
+# Python 캐시 (metrics 카운터 실행 시 생성)
+__pycache__/
+*.pyc
