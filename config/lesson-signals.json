@@ -1,5 +1,5 @@
 {
-  "_comment": "교훈 후보 검출 신호. 사용자 발화에서 교정 의도를 잡는다. 후보일 뿐이므로 판정은 /learn 이 한다. 로컬 확장: ~/.claude/lesson-signals.local.json (같은 스키마, signals 배열이 머지된다)",
+  "_comment": "레슨런 후보 검출 신호. 사용자 발화에서 교정 의도를 잡는다. 후보일 뿐이므로 판정은 /learn 이 한다. 로컬 확장: ~/.claude/lesson-signals.local.json (같은 스키마, signals 배열이 머지된다)",
   "maxPerSession": 30,
   "signals": [
     { "pattern": "아닙니다|아니요|아니오|그게 아니", "label": "부정" },
