@@ -264,6 +264,11 @@ function migrateOmcStateToOpsAgent() {
 // ops-agent 의 base/extensions 룰을 사용자 스코프로 미러링한다.
 // 외부 어댑터 등 소비자는 이 경로를 참조한다 (ops-agent 캐시 버전 디렉토리는 갱신 시 바뀌므로).
 // *.local.* 파일은 사용자 추가 룰이므로 덮어쓰지 않는다.
+//
+// 미러는 세션별 스냅숏이 아니라 고정 경로 하나이므로 마지막 기록자가 이긴다. 새 세션이 열리면
+// 진행 중인 다른 세션도 즉시 새 규칙을 읽는다. 그래서 소비자가 알아야 하는 것은 갱신 시점이
+// 아니라 지금 읽는 규칙이 몇 버전인가다. VERSION 을 함께 기록해 그것을 판정할 수 있게 한다.
+// 없으면 이미 고쳐진 결함을 다시 제기하게 된다 (#207).
 function mirrorStyleRules() {
   try {
     const src = join(pluginRoot, 'config', 'style-rules');
@@ -282,6 +287,12 @@ function mirrorStyleRules() {
         const content = readFileSync(srcPath, 'utf8');
         writeFileSync(dstPath, content);
       }
+    }
+
+    // 미러가 어느 버전의 규칙인지 남긴다. 소스에 VERSION 이 없으면 낡은 값이 남지 않게 쓰지 않는다.
+    const versionSrc = join(pluginRoot, 'VERSION');
+    if (existsSync(versionSrc)) {
+      writeFileSync(join(dst, 'VERSION'), readFileSync(versionSrc, 'utf8').trim() + '\n');
     }
   } catch { /* non-critical */ }
 }
