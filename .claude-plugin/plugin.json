@@ -1,6 +1,6 @@
 {
   "name": "ops-agent",
-  "version": "7.10.2",
+  "version": "7.11.0",
   "description": "AI-Native Development Workflow — Issue Flow with pluggable providers",
   "author": {
     "name": "idean3885"
