@@ -9,7 +9,9 @@
 ## AI 티·가독성·톤 SSOT
 
 ops-agent 의 `config/style-rules/{base,extensions}/` 가 모든 한국어 문서(블로그·위키·이슈·PoC·데일리로그·동료리뷰·성과평가)의 단일 출처.
-세션 시작 시 ops-agent SessionStart hook 이 `~/.claude/ops-agent/style-rules/` 로 미러한다. 외부 소비자는 이 경로를 참조.
+세션 시작 시 ops-agent SessionStart hook 이 `~/.claude/ops-agent/style-rules/` 로 미러한다. 외부 소비자는 이 경로를 참조하고, 같은 디렉토리의 `VERSION` 이 그 규칙의 버전이다.
+
+**규칙 자체를 고치러 갈 때는 미러가 아니라 ops-agent 레포를 원천으로 삼는다.** 미러는 진행 중 세션에서 낡아 있을 수 있어, 미러를 근거로 결함을 제기하면 이미 고쳐진 것을 다시 고치게 된다. 미러의 `VERSION` 과 레포의 최신 버전을 대조해 판정한다.
 
 | 파일 | 역할 |
 |------|------|
