@@ -17,16 +17,21 @@
 
 | 계층 | 경로 | 비고 |
 |---|---|---|
-| org | `~/.claude/ops-agent/orgs/<owner>.json` → `conventions` 키 | 멀티레포 스킬이 쓰는 기존 매니페스트를 재사용한다. 신규 파일을 만들지 않는다 |
 | repo | `~/.claude/ops-agent/repos/<owner>--<repo>.json` | 레포 단위 선언 |
+| org | `~/.claude/ops-agent/orgs/<owner>.json` → `conventions` 키 | 멀티레포 스킬이 쓰는 기존 매니페스트를 재사용한다. 신규 파일을 만들지 않는다 |
+| org (외부 어댑터) | `<adapterRoot>/<adapter>/orgs/<owner>.json` | 외부 어댑터 org 의 기존 매니페스트는 여기 있다. 어댑터 루트는 `~/.claude/ops-agent/adapters.json` 이 선언한다 |
 
-`<owner>` · `<repo>` 는 **git remote 에서 얻는다**.
+세 번째 줄이 없던 동안, 규약대로 기존 매니페스트에 `conventions` 를 선언하면 해석되지 않았다. 해석되게 하려고 `orgs/<owner>.json` 을 새로 만들면 같은 이름 파일이 두 위치에 생겨 어느 쪽을 쓸지 규정되지 않는다. 위 순서가 그 판정이다.
+
+`<owner>` · `<repo>` 는 **git remote 에서 얻는다**. 디렉토리 이름으로 추론하지 않는다. CI 러너의 임의 클론 경로, 다른 사람의 클론 위치, 상위 디렉토리를 거치지 않은 직접 진입에서 모두 깨진다. remote 는 클론 위치·세션 습관과 무관하게 불변이다.
+
+식별과 발견은 [`scripts/resolve-manifest.mjs`](../scripts/resolve-manifest.mjs) 한 곳에서 한다. org-flow 와 commit 단계가 같은 해석기를 쓴다. 규칙을 두 벌로 두면 한쪽에 선언한 값이 다른 쪽에서 읽히지 않는다.
 
 ```bash
-git remote get-url origin   # https://host/<owner>/<repo>.git → owner, repo
+node ~/.claude/ops-agent/current/scripts/resolve-manifest.mjs
 ```
 
-디렉토리 이름으로 추론하지 않는다. CI 러너의 임의 클론 경로, 다른 사람의 클론 위치, 상위 디렉토리를 거치지 않은 직접 진입에서 모두 깨진다. remote 는 클론 위치·세션 습관과 무관하게 불변이다.
+해석 실패와 대체 경로 사용은 `notes` 에 담겨 나온다. 조용히 기본값으로 떨어지지 않는다.
 
 ## 해석 순서
 

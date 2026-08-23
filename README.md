@@ -168,6 +168,7 @@ graph LR
 | `scripts/bump-version.sh` | 버전 4곳 동시 갱신 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | `scripts/post-merge-sync.sh` | 머지 후 로컬 캐시 동기 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | `scripts/action-gate-allow.sh` | 되돌리기 어려운 행위의 세션 허용 토글 | [docs/action-gate.md](docs/action-gate.md) |
+| `scripts/resolve-manifest.mjs` | 소유자 식별과 org·repo 매니페스트 발견 | [docs/conventions-slot.md](docs/conventions-slot.md) |
 | `config/style-rules/metrics/tells_count.py` | AI 티 지표 측정 | [지표 정의](config/style-rules/metrics/metrics-spec.md) |
 
 프로파일을 받는 스크립트는 대상 목록·판정 기준·임계값을 갖지 않고 소비 프로젝트가 공급합니다.

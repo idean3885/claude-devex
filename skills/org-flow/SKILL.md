@@ -10,21 +10,29 @@ description: 멀티레포 오케스트레이션 + 사내/퍼블릭 provider 분�
 
 ## 트리거
 
-이 스킬 호출 자체가 **"현재 디렉토리를 GitHub 조직(org)으로 취급한다"는 사용자 컨펌**이다.
-디렉토리 이름은 조직명과 동일하다고 전제한다 (예: `<org>/` → org=`<org>`).
+이 스킬 호출 자체가 **"현재 디렉토리를 조직 작업 대상으로 취급한다"는 사용자 컨펌**이다.
+
+조직 식별은 **원격 저장소 주소의 소유자 구간**으로 한다. 디렉토리 이름은 클론 위치·진입 경로·실행 환경에 따라 달라지므로 전제하지 않는다. 원격이 없을 때만 디렉토리 이름으로 떨어지고, 그때는 사용자에게 확인한다.
+
+식별과 매니페스트 발견은 [`scripts/resolve-manifest.mjs`](../../scripts/resolve-manifest.mjs) 가 수행한다. commit 단계의 컨벤션 슬롯 해석과 같은 해석기를 쓴다.
 
 - "/org-flow", "org-flow", "멀티레포", "multi-repo", "org 셋업"
 
 ## 최초 호출: 셋업 마법사
 
-cwd basename 으로 org 이름을 추론한 뒤, 두 위치에서 매니페스트를 조회한다.
+해석기를 실행해 소유자와 매니페스트를 얻는다.
 
-| 위치 | 용도 |
-|------|------|
-| `~/.claude/ops-agent/orgs/<org>.json` | 퍼블릭 (ops-agent 내장 GitHub provider) |
-| `~/.claude/toolkits/<toolkit>/orgs/<org>.json` | 사내 (외부 toolkit 플러그인의 사내 provider) |
+```bash
+node ~/.claude/ops-agent/current/scripts/resolve-manifest.mjs
+```
 
-둘 다 없으면 셋업 마법사로 진입한다.
+| 출력 | 뜻 |
+|------|-----|
+| `manifests` | 발견된 매니페스트를 해석 순서대로 담은 목록 |
+| `ownerSource` | `remote` 면 확정, `directory` 면 사용자 확인이 필요하다 |
+| `notes` | 해석 실패·대체 경로 사용 사유. 비어 있지 않으면 그대로 사용자에게 보인다 |
+
+`manifests` 가 비어 있으면 셋업 마법사로 진입한다. **`notes` 를 넘기고 조용히 기본값으로 진행하지 않는다.**
 
 **Step 1: 단일 질문 (사내/퍼블릭 분기)**
 
@@ -35,7 +43,12 @@ cwd basename 으로 org 이름을 추론한 뒤, 두 위치에서 매니페스�
 **Step 2: 매니페스트 생성**
 
 선택한 위치에 `<org>.json` 작성. 스키마는 아래 컨벤션 참조.
-사내 분기 시 toolkit 측 디렉토리(`~/.claude/toolkits/<toolkit>/orgs/`)가 없으면 생성.
+
+외부 어댑터 분기면 해석기 출력의 `adapterRoots` 아래에 `<adapter>/orgs/` 를 만든다. 어댑터 루트는 이름을 추측하지 않고 `~/.claude/ops-agent/adapters.json` 의 선언에서 읽는다. 선언이 없으면 기본값 하나가 쓰이고, 설치 위치가 다르면 그 파일에 적는다.
+
+```json
+{ "roots": ["~/.claude/toolkits"] }
+```
 
 **Step 3: 프로젝트 로컬 매니페스트 안내**
 
@@ -118,11 +131,13 @@ cwd basename 으로 org 이름을 추론한 뒤, 두 위치에서 매니페스�
 
 ```
 1. cwd → 부모 순회 (max depth 6)
-2. 각 부모에서 .ops-agent/project.json 또는 basename 매칭 시도
-3. basename = <org> 면 `~/.claude/ops-agent/orgs/<basename>.json` 와 `~/.claude/toolkits/*/orgs/<basename>.json` 검색
-4. 발견된 매니페스트 사용
+2. 각 부모에서 .ops-agent/project.json 탐색
+3. 각 부모에서 resolve-manifest.mjs 실행 (소유자는 그 디렉토리의 원격에서 얻는다)
+4. manifests 가 비지 않은 첫 결과 사용
 5. depth 6 까지 미발견 시 셋업 마법사 진입 (Step 1)
 ```
+
+3번이 소유자를 원격에서 얻으므로 워크트리·하위 디렉토리·임의 클론 경로에서 모두 같은 값이 나온다.
 
 ## 역할 분담
 
