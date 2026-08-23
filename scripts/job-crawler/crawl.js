@@ -101,7 +101,7 @@ function writeOutputs(results, ctx, report) {
 
   const detailJobs = results.flatMap((r) =>
     r.jobs
-      .filter((j) => j.detail && !j.referralOnly && j.score >= ctx.threshold)
+      .filter((j) => j.detail && !j.referralOnly && !j.detailError && j.score >= ctx.threshold)
       .map((j) => ({ company: r.name, job: j }))
   );
   if (detailJobs.length === 0) return;
@@ -142,14 +142,18 @@ async function main() {
       console.error(`[crawl] ${name} ...`);
       const r = await collectOne(browser, name, cfg, ctx);
       if (ctx.detail && !r.error && r.jobs.some((j) => j.score >= ctx.threshold)) {
-        const { examined, skipped, expanded } = await enrichDetails(browser, r, ctx, cfg);
+        const { examined, skipped, expanded, failed, failReasons } =
+          await enrichDetails(browser, r, ctx, cfg);
         r.detailSkipped = skipped;
         r.expanded = expanded;
+        r.detailFailed = failed;
+        r.detailFailReasons = failReasons;
         const dropped = r.jobs.filter((j) => j.referralOnly).length;
         console.error(
           `[detail] ${name}: ${examined}건 확인` +
             (expanded ? `, 묶음 공고 → ${expanded}건으로 펼침` : '') +
             (dropped ? `, 추천 전용 ${dropped}건 제외` : '') +
+            (failed ? `, 상세 확인 실패 ${failed}건` : '') +
             (skipped ? `, 상한 초과 ${skipped}건 미확인` : '')
         );
       }
