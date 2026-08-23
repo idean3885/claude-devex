@@ -27,6 +27,30 @@ function detectReferralOnly(text) {
   return REFERRAL_CTA.test(t) && !APPLY_CTA.test(t);
 }
 
+// 상세 원문 기준 실격 판정.
+//
+// 핏 채점은 목록 제목만 본다. 제목에 나오지 않지만 지원 여부를 정하는 조건이 있다 —
+// 고용형태, 특정 계열사 재직자 제한, 해외 근무지, 필수 자격증. 전부 상세 원문에는 있다.
+//
+// 무엇이 실격인지는 지원자 사정이므로 기준을 엔진이 갖지 않는다. 프로파일이 공급한다.
+//
+// 채점을 상세까지 넓히지 않는 이유는 대상 간 비교가 깨지기 때문이다. 제목으로 채점되는
+// 대상보다 점수가 부풀어 임계값의 뜻이 대상마다 달라진다. 그래서 가감점이 아니라
+// 실격 판정으로 분리한다. 추천 전용과 같은 처리다.
+function compileDisqualifiers(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((d) => d && d.pattern)
+    .map((d) => ({ re: new RegExp(d.pattern, d.flags || 'i'), label: d.label || d.pattern }));
+}
+
+function detectDisqualified(text, compiled) {
+  if (!compiled || compiled.length === 0) return null;
+  const t = (text || '').replace(/\s+/g, ' ');
+  const hit = compiled.find((d) => d.re.test(t));
+  return hit ? hit.label : null;
+}
+
 // innerText 를 리포트에 넣기 좋게 압축한다 — 공백 정리 + 연속 빈 줄 축약 + 상한.
 function compactDetail(text, maxChars) {
   return (text || '')
@@ -71,6 +95,7 @@ async function enrichDetails(browser, result, ctx, cfg = {}) {
   );
   const targeted = fits.slice(0, ctx.detailCap);
   const goto = resolveGoto(cfg, DETAIL_GOTO);
+  const disq = compileDisqualifiers((cfg.detail && cfg.detail.disqualify) || ctx.disqualify);
   let expanded = 0;
 
   for (const j of targeted) {
@@ -89,8 +114,10 @@ async function enrichDetails(browser, result, ctx, cfg = {}) {
     if (children) {
       for (const c of children) {
         c.referralOnly = detectReferralOnly(c.body || page.text);
+        c.disqualified = detectDisqualified(c.body || page.text, disq);
         c.detail = compactDetail(c.body, ctx.detailMaxChars);
         if (c.referralOnly) c.verdict = '추천전용';
+        else if (c.disqualified) c.verdict = '실격';
         delete c.body;
       }
       j.replacedBy = children;
@@ -99,8 +126,10 @@ async function enrichDetails(browser, result, ctx, cfg = {}) {
     }
 
     j.referralOnly = detectReferralOnly(page.text);
+    j.disqualified = detectDisqualified(page.text, disq);
     j.detail = compactDetail(page.text, ctx.detailMaxChars);
     if (j.referralOnly) j.verdict = '추천전용';
+    else if (j.disqualified) j.verdict = '실격';
   }
 
   if (expanded > 0) {
@@ -109,13 +138,18 @@ async function enrichDetails(browser, result, ctx, cfg = {}) {
   }
 
   const failed = targeted.filter((j) => j.detailError);
+  const disqualified = result.jobs.filter((j) => j.disqualified).length;
   return {
     examined: targeted.length,
     skipped: fits.length - targeted.length,
     expanded,
     failed: failed.length,
     failReasons: [...new Set(failed.map((j) => j.detailError))].slice(0, 3),
+    disqualified,
   };
 }
 
-module.exports = { detectReferralOnly, compactDetail, fetchPage, fetchDetail, enrichDetails };
+module.exports = {
+  detectReferralOnly, compactDetail, fetchPage, fetchDetail, enrichDetails,
+  compileDisqualifiers, detectDisqualified,
+};
