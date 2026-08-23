@@ -6,6 +6,7 @@
 
 const { newPage, resolveGoto, gotoWith } = require('./browser');
 const { score, classify } = require('./scorer');
+const { collectFromDeclaration } = require('./listsource');
 
 // 목록 진입 기본값. 대상이 targets[].goto 로 덮어쓸 수 있다.
 const LIST_GOTO = { waitUntil: 'networkidle2', timeout: 45000 };
@@ -66,7 +67,7 @@ function dedupe(items) {
 
 async function collectOne(browser, name, cfg, ctx) {
   const page = await newPage(browser);
-  const result = { name, url: cfg.url, count: 0, jobs: [], error: null, fallback: false, listUnreached: null };
+  const result = { name, url: cfg.url, count: 0, jobs: [], error: null, fallback: false, listUnreached: null, listSource: 'dom' };
 
   try {
     await gotoWith(page, cfg.url, resolveGoto(cfg, LIST_GOTO));
@@ -83,12 +84,22 @@ async function collectOne(browser, name, cfg, ctx) {
     await new Promise((r) => setTimeout(r, 1500));
 
     let items = [];
-    if (cfg.extract && cfg.extract.container) {
-      items = await extractByContainer(page, cfg.extract.container);
-    }
-    if (items.length === 0) {
-      result.fallback = true;
-      items = await extractByLinkText(page, ctx.linkPattern.source, ctx.linkPattern.flags);
+    if (cfg.list && cfg.list.endpoint) {
+      // 선언이 있으면 DOM 을 보지 않는다. 목록이 DOM 에 없는 대상이라 선언한 것이므로
+      // 실패했을 때 DOM 으로 떨어지면 그 실패가 다시 소수 건수로 덮인다.
+      const got = await collectFromDeclaration(page, cfg.list);
+      items = got.items;
+      result.listSource = 'declared';
+      result.listTotal = got.total;
+      result.listClosed = got.closed;
+    } else {
+      if (cfg.extract && cfg.extract.container) {
+        items = await extractByContainer(page, cfg.extract.container);
+      }
+      if (items.length === 0) {
+        result.fallback = true;
+        items = await extractByLinkText(page, ctx.linkPattern.source, ctx.linkPattern.flags);
+      }
     }
 
     result.jobs = dedupe(items)
@@ -123,6 +134,8 @@ async function collectOne(browser, name, cfg, ctx) {
       } else if (urls.size === 1) {
         result.listUnreached = `링크 heuristic 결과가 전부 같은 URL (${result.jobs.length}건)`;
       }
+    } else if (result.listSource === 'declared' && result.count === 0) {
+      result.listUnreached = `선언 경로 응답 ${result.listTotal}건 중 열린 공고 0건`;
     }
   } catch (e) {
     result.error = e.message;
