@@ -52,6 +52,7 @@ AI 에게 코드를 맡기면서 제 역할이 "코드 작성"에서 "의사결�
 | provider 감지 (git remote host → 이슈 트래커 정의) | 트래커별 API 방식 추측 |
 | git identity 자동 설정 (provider 기준) | 다른 계정으로 커밋 |
 | 스타일 SSOT 미러 (`config/style-rules/` → `~/.claude/ops-agent/style-rules/`) | 작성 규칙이 레포마다 제각각 |
+| 유저 스코프 자원 자리 만들기 (`~/.claude/advisor/profiles/` 등) | 스킬이 자기 계약의 전제를 못 갖춰 첫 사용이 매치 실패로 끝남 |
 | 버전 동기화 + git 자동 복원 | 캐시 디렉토리 버전 불일치 |
 
 **hook**: 매 편집·매 응답에 규칙을 겁니다.

@@ -19,6 +19,8 @@ ops-agent는 사상·템플릿(엔진)만 담고 실제 방향·데이터는 소
 
 프로파일은 유저 스코프(`~/.claude/advisor/profiles/*.json`)에 두어 플러그인 업데이트와 독립 유지한다. 소비 프로젝트가 자기 방향·렌즈·참조·PARA 경로를 채운다.
 
+디렉토리는 SessionStart 가 만든다. 유저 스코프에 두기로 했으면 그 자리를 만드는 주체도 함께 정해진다. 자리만 만들고 내용은 넣지 않으므로, 첫 조회는 빈 목록으로 끝난다. 그때 [`config/advisor/profiles/example.json`](../../config/advisor/profiles/example.json) 을 복사해 채운다.
+
 ### 탐색 절차
 
 ```bash
