@@ -53,9 +53,11 @@ function renderReport(results, ctx) {
     }
 
     const unchecked = r.jobs.filter((j) => j.detailError);
-    const fits = r.jobs.filter((j) => j.score >= ctx.threshold && !j.referralOnly && !j.detailError);
+    const disqualified = r.jobs.filter((j) => j.disqualified && !j.referralOnly);
+    const excluded = (j) => j.referralOnly || j.disqualified || j.detailError;
+    const fits = r.jobs.filter((j) => j.score >= ctx.threshold && !excluded(j));
     const referral = r.jobs.filter((j) => j.referralOnly);
-    const rest = r.jobs.filter((j) => j.score < ctx.threshold && !j.referralOnly && !j.detailError);
+    const rest = r.jobs.filter((j) => j.score < ctx.threshold && !excluded(j));
 
     if (r.detailSkipped) {
       lines.push(`- 상세 미확인 ${r.detailSkipped}건 (detail-cap ${ctx.detailCap} 초과)`);
@@ -98,6 +100,19 @@ function renderReport(results, ctx) {
       lines.push('|---|---|---|');
       for (const j of unchecked) {
         lines.push(`| ${j.score} | [${esc(j.title)}](${j.url}) | ${esc(j.detailError)} |`);
+      }
+    }
+
+    if (disqualified.length > 0) {
+      lines.push('');
+      lines.push('### 실격 (프로파일 조건 불일치, 제외)');
+      lines.push('');
+      lines.push('자리가 있다는 사실은 정보이므로 지우지 않고 사유와 함께 남깁니다.');
+      lines.push('');
+      lines.push('| score | 제목 | 사유 |');
+      lines.push('|---|---|---|');
+      for (const j of disqualified) {
+        lines.push(`| ${j.score} | [${esc(j.title)}](${j.url}) | ${esc(j.disqualified)} |`);
       }
     }
 

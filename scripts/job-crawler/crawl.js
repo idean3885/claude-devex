@@ -60,6 +60,9 @@ function buildContext(profile, cli) {
         ? detailCfg.cap
         : 12,
     detailMaxChars: detailCfg.maxChars != null ? detailCfg.maxChars : 4000,
+    // 실격 패턴은 지원자 사정이라 엔진이 갖지 않는다. 프로파일 전역 기본값이고,
+    // 대상별 targets[].detail.disqualify 가 있으면 그쪽이 이긴다.
+    disqualify: detailCfg.disqualify,
     restCap: (profile.report && profile.report.restCap) != null ? profile.report.restCap : 10,
     linkPattern: new RegExp(linkCfg.pattern || DEFAULT_LINK_PATTERN, linkCfg.flags || 'i'),
     rules: compileRules(profile.rules),
@@ -101,7 +104,7 @@ function writeOutputs(results, ctx, report) {
 
   const detailJobs = results.flatMap((r) =>
     r.jobs
-      .filter((j) => j.detail && !j.referralOnly && !j.detailError && j.score >= ctx.threshold)
+      .filter((j) => j.detail && !j.referralOnly && !j.disqualified && !j.detailError && j.score >= ctx.threshold)
       .map((j) => ({ company: r.name, job: j }))
   );
   if (detailJobs.length === 0) return;
@@ -142,17 +145,19 @@ async function main() {
       console.error(`[crawl] ${name} ...`);
       const r = await collectOne(browser, name, cfg, ctx);
       if (ctx.detail && !r.error && r.jobs.some((j) => j.score >= ctx.threshold)) {
-        const { examined, skipped, expanded, failed, failReasons } =
+        const { examined, skipped, expanded, failed, failReasons, disqualified } =
           await enrichDetails(browser, r, ctx, cfg);
         r.detailSkipped = skipped;
         r.expanded = expanded;
         r.detailFailed = failed;
         r.detailFailReasons = failReasons;
+        r.disqualified = disqualified;
         const dropped = r.jobs.filter((j) => j.referralOnly).length;
         console.error(
           `[detail] ${name}: ${examined}건 확인` +
             (expanded ? `, 묶음 공고 → ${expanded}건으로 펼침` : '') +
             (dropped ? `, 추천 전용 ${dropped}건 제외` : '') +
+            (disqualified ? `, 실격 ${disqualified}건 제외` : '') +
             (failed ? `, 상세 확인 실패 ${failed}건` : '') +
             (skipped ? `, 상한 초과 ${skipped}건 미확인` : '')
         );
