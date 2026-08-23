@@ -26,7 +26,9 @@ local_path = os.environ["LOCAL_RULES"]
 pending_path = os.environ["PENDING_FILE"]
 
 with open(plugin_path) as f:
-    plugin_rules = json.load(f).get("rules", [])
+    plugin_conf = json.load(f)
+plugin_rules = plugin_conf.get("rules", [])
+ending_class = plugin_conf.get("_endingClass", "")
 
 local_rules = []
 if os.path.exists(local_path):
@@ -60,13 +62,17 @@ with open(transcript) as f:
 if not last_text:
     sys.exit(0)
 
+# %E% 는 어미 묶음 참조다. 활용형을 항목마다 열거하지 않기 위한 자리이고,
+# 묶음 자체는 룰 파일이 한 번만 선언한다.
+ENDINGS = ending_class or "(?:다|는|고|서|면|지|기|은|을|었|았)"
+
 violations = []
 for rule in rules:
-    pat = rule["pattern"]
+    pat = rule["pattern"].replace("%E%", ENDINGS)
     matches = [m.group(0) for m in re.finditer(pat, last_text)]
     if matches:
         uniq = sorted(set(matches))
-        violations.append(f"  - 패턴 `{pat}` 매칭: {', '.join(uniq)} → 대체 `{rule['replacement']}`")
+        violations.append(f"  - 패턴 `{rule['pattern']}` 매칭: {', '.join(uniq)} → 대체 `{rule['replacement']}`")
 
 if violations:
     with open(pending_path, "w") as f:
