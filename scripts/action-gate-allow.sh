@@ -5,10 +5,25 @@
 # PR 머지·릴리즈·force push·리소스 삭제)를 이 마커가 있을 때만 통과시킨다.
 # 사용자 명시 승인 후에만 켤 것.
 #
-# 사용: action-gate-allow.sh on|off|status [ttl_minutes] [session_id]
-#   on      마커 생성 (기본 TTL 30분). session_id 지정 시 그 세션에만 허용.
+# 사용: action-gate-allow.sh on|off|status [scopes] [ttl_minutes] [session_id]
+#   on      마커 생성 (기본 TTL 30분).
+#           scopes 를 주면 그 갈래만 열린다. 생략하면 all 이고 모든 갈래가 열린다.
+#           두 번째 인자가 숫자면 옛 형식(ttl)으로 읽어 all 로 연다.
 #   off     마커 삭제 (즉시 차단 복귀).
 #   status  현재 허용 상태 출력.
+#
+# 갈래 목록 (차단 메시지가 해당 갈래를 담은 명령을 그대로 제시한다):
+#   cluster-write         kubectl·argocd·helm mutation
+#   repo-merge            gh pr merge
+#   repo-release          gh release create/edit/delete
+#   repo-delete           gh repo delete/archive
+#   git-force             force push · 원격 브랜치 삭제
+#   git-default-push      기본 브랜치 직접 push
+#   worktree-destructive  git reset --hard · clean · branch -D · restore
+#   all                   전부
+#
+# 시간만으로 열면 그 창 안에서 승인 대상이 아니던 갈래까지 통과한다. 갈래를 함께 담는
+# 이유가 그것이다. TTL 은 창의 길이만 정하고 범위는 정하지 않는다.
 set -euo pipefail
 
 MARKER="$HOME/.claude/ops-agent/.cache/action-gate-allow.json"
@@ -16,17 +31,36 @@ cmd="${1:-status}"
 
 case "$cmd" in
   on)
-    ttl="${2:-30}"
-    sid="${3:-}"
+    arg2="${2:-}"
+    if [[ "$arg2" =~ ^[0-9]+$ ]]; then
+      # 옛 형식: on [ttl] [session_id]
+      scopes="all"
+      ttl="$arg2"
+      sid="${3:-}"
+    else
+      scopes="${arg2:-all}"
+      ttl="${3:-30}"
+      sid="${4:-}"
+    fi
+
+    # 쉼표 목록을 JSON 배열로. 공백은 제거하고 빈 항목은 넣지 않는다.
+    # 마지막 항목에 개행이 없으면 read 가 거짓을 돌려주고 그 항목이 사라진다. %s\n 로 닫는다.
+    scopes_json=$(printf '%s\n' "$scopes" | tr ',' '\n' | while IFS= read -r s; do
+      s="${s// /}"
+      [ -n "$s" ] && printf '"%s",' "$s"
+    done)
+    scopes_json="[${scopes_json%,}]"
+    [ "$scopes_json" = "[]" ] && scopes_json='["all"]'
+
     mkdir -p "$(dirname "$MARKER")"
     now_ms=$(( $(date +%s) * 1000 ))
     exp=$(( now_ms + ttl * 60000 ))
     if [ -n "$sid" ]; then
-      printf '{"expiresAt":%s,"sessionId":"%s"}\n' "$exp" "$sid" > "$MARKER"
+      printf '{"expiresAt":%s,"scopes":%s,"sessionId":"%s"}\n' "$exp" "$scopes_json" "$sid" > "$MARKER"
     else
-      printf '{"expiresAt":%s}\n' "$exp" > "$MARKER"
+      printf '{"expiresAt":%s,"scopes":%s}\n' "$exp" "$scopes_json" > "$MARKER"
     fi
-    echo "[action-gate-allow] ON (TTL ${ttl}m${sid:+, session ${sid}})"
+    echo "[action-gate-allow] ON (갈래 ${scopes}, TTL ${ttl}m${sid:+, session ${sid}})"
     ;;
   off)
     rm -f "$MARKER"
@@ -42,7 +76,7 @@ case "$cmd" in
     fi
     ;;
   *)
-    echo "usage: $0 on|off|status [ttl_minutes] [session_id]" >&2
-    exit 2
+    echo "usage: $0 on|off|status [scopes] [ttl_minutes] [session_id]" >&2
+    exit 1
     ;;
 esac

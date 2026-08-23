@@ -109,6 +109,7 @@ export function detectGitRiskActions(segments, ctx) {
       if (target && target === defaultBranch) {
         ops.push({
           category: 'repo',
+          scope: 'git-default-push',
           tool: 'git push',
           verb: `기본 브랜치(${defaultBranch}) 직접 push`,
           why: '원격에 올라간 뒤에는 force push 없이 되돌릴 수 없습니다',
@@ -120,7 +121,7 @@ export function detectGitRiskActions(segments, ctx) {
 
     for (const rule of DESTRUCTIVE) {
       if (rule.test(seg)) {
-        ops.push({ category: 'worktree', tool: 'git', verb: rule.verb, why: rule.why, alt: rule.alt });
+        ops.push({ category: 'worktree', scope: 'worktree-destructive', tool: 'git', verb: rule.verb, why: rule.why, alt: rule.alt });
         break;
       }
     }

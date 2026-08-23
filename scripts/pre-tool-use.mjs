@@ -232,9 +232,13 @@ if (!DISABLE) {
           // 이 메시지는 자립해야 한다. 정본 절차(GATE 3)는 flow 스킬 안에 있어 /flow 를
           // 거치지 않은 세션에는 로딩되지 않는다. 게이트가 발동하는 순간 컨텍스트에 있다고
           // 보장되는 것은 이 문자열뿐이므로, 실행 주체·형식·차단 사실을 여기서 다 말한다.
+          // 개방 명령에 감지된 갈래만 싣는다. 사용자가 그대로 실행하면 그 갈래만 열리고,
+          // 승인 대상이 아니던 행위는 다시 사람에게 온다. 갈래를 손으로 고르게 하지 않는다.
+          const scopeArg = [...new Set(gateResult.ops.map(o => o.scope).filter(Boolean))].join(',') || 'all';
           const msg = `${header} 되돌리기 어려운/외부 영향 행위를 감지했습니다:\n${opLines}\n\n` +
             `게이트 개방은 사용자만 실행할 수 있습니다. 아래를 그대로 제시하고 기다리세요:\n` +
-            `  !bash ${gateRoot}/scripts/action-gate-allow.sh on\n\n` +
+            `  !bash ${gateRoot}/scripts/action-gate-allow.sh on ${scopeArg}\n\n` +
+            `이 명령은 위 갈래(${scopeArg})만 엽니다. 다른 갈래는 계속 차단되고 다시 사람에게 옵니다.\n` +
             `어시스턴트가 이 스크립트를 실행하면 자기 수정으로 차단됩니다. 정상 동작이며 우회하지 않습니다.\n` +
             `자연어 승인("승인합니다"·"머지 승인" 등)은 게이트를 열지 않습니다. 마커 파일 생성만이 개방 신호입니다.\n` +
             `read-only·가역 명령(git commit, 브랜치 push, gh pr create 등)은 통과합니다.\n` +
@@ -706,15 +710,22 @@ function runWhatAbstractionGuard(command) {
 // 한계: `bash deploy.sh` 처럼 스크립트 내부에서 실행되는 명령은 최상위 명령만 보므로 탐지 못 함
 //   (의도된 배포 스크립트 경로는 sanctioned 로 간주). 직접 타이핑하는 ad-hoc 명령을 막는 안전망.
 // verb 세트/플래그 세트는 파일 상단(게이트 호출보다 먼저 초기화되어야 함)에 선언.
+// 게이트는 시간만이 아니라 **승인된 행위 갈래**로도 열린다. 시간만으로 열면 그 창 안에서
+// 승인 대상이 아니었던 갈래까지 함께 통과한다. 실제로 PR 머지를 위해 연 창에서 기본 브랜치
+// 직접 push 가 통과했다. 둘 다 category 는 `repo` 라 category 단위로는 나뉘지 않는다.
+// 그래서 갈래 키를 category 보다 좁게 둔다 (scope).
 function runActionGate(command, sessionId, hookCwd) {
-  if (actionGateAllowed(sessionId)) return { blocked: false, ops: [] };
+  const allowed = allowedScopes(sessionId);
+  if (allowed.has('all')) return { blocked: false, ops: [] };
   const ops = detectGatedActions(command, hookCwd);
-  return { blocked: ops.length > 0, ops };
+  const outside = ops.filter(o => !allowed.has(o.scope || 'unscoped'));
+  return { blocked: outside.length > 0, ops: outside, allowed: [...allowed] };
 }
 
-function actionGateAllowed(sessionId) {
+// 마커가 담은 허용 갈래 집합. 비어 있으면 아무것도 열려 있지 않다.
+function allowedScopes(sessionId) {
   if (process.env.OPS_AGENT_ACTION_GATE_ALLOW === '1'
-    || process.env.OPS_AGENT_CLUSTER_WRITE_ALLOW === '1') return true;
+    || process.env.OPS_AGENT_CLUSTER_WRITE_ALLOW === '1') return new Set(['all']);
   const cacheDir = join(homedir(), '.claude', 'ops-agent', '.cache');
   // 신규 마커 우선, 레거시 마커도 인식
   for (const name of ['action-gate-allow.json', 'cluster-write-allow.json']) {
@@ -724,10 +735,12 @@ function actionGateAllowed(sessionId) {
       const m = JSON.parse(readFileSync(markerPath, 'utf8'));
       if (m.sessionId && sessionId && m.sessionId !== sessionId) continue;
       if (m.expiresAt && Date.now() > m.expiresAt) continue;
-      return true;
+      // 갈래가 없는 마커는 이 변경 이전 형식이다. 전체 허용으로 읽어 진행 중인 창을 끊지 않는다.
+      const scopes = Array.isArray(m.scopes) && m.scopes.length ? m.scopes : ['all'];
+      return new Set(scopes);
     } catch { /* 다음 후보 */ }
   }
-  return false;
+  return new Set();
 }
 
 // 게이트 대상 행위 = 클러스터 mutation + 레포 되돌리기 어려운 행위 + git 위험 조작
@@ -765,13 +778,13 @@ function detectClusterMutations(command) {
     let m;
     if ((m = seg.match(/^(?:\S*\/)?kubectl\s+(.*)$/s))) {
       const verb = firstPositional(m[1]);
-      if (verb && KUBECTL_WRITE.has(verb)) ops.push({ category: 'cluster', tool: 'kubectl', verb });
+      if (verb && KUBECTL_WRITE.has(verb)) ops.push({ category: 'cluster', scope: 'cluster-write', tool: 'kubectl', verb });
     } else if ((m = seg.match(/^(?:\S*\/)?argocd\s+(app|proj|repo|cluster|account|admin)\s+(.*)$/s))) {
       const verb = firstPositional(m[2]);
-      if (verb && ARGOCD_WRITE.has(verb)) ops.push({ category: 'cluster', tool: `argocd ${m[1]}`, verb });
+      if (verb && ARGOCD_WRITE.has(verb)) ops.push({ category: 'cluster', scope: 'cluster-write', tool: `argocd ${m[1]}`, verb });
     } else if ((m = seg.match(/^(?:\S*\/)?helm\s+(.*)$/s))) {
       const verb = firstPositional(m[1]);
-      if (verb && HELM_WRITE.has(verb)) ops.push({ category: 'cluster', tool: 'helm', verb });
+      if (verb && HELM_WRITE.has(verb)) ops.push({ category: 'cluster', scope: 'cluster-write', tool: 'helm', verb });
     }
   }
   return ops;
@@ -783,15 +796,15 @@ function detectRepoActions(command) {
   for (const seg of gateSegments(command)) {
     let m;
     if (/^(?:\S*\/)?gh\s+pr\s+merge\b/.test(seg)) {
-      ops.push({ category: 'repo', tool: 'gh pr', verb: 'merge' });
+      ops.push({ category: 'repo', scope: 'repo-merge', tool: 'gh pr', verb: 'merge' });
     } else if ((m = seg.match(/^(?:\S*\/)?gh\s+release\s+(create|edit|delete)\b/))) {
-      ops.push({ category: 'repo', tool: 'gh release', verb: m[1] });
+      ops.push({ category: 'repo', scope: 'repo-release', tool: 'gh release', verb: m[1] });
     } else if ((m = seg.match(/^(?:\S*\/)?gh\s+repo\s+(delete|archive)\b/))) {
-      ops.push({ category: 'repo', tool: 'gh repo', verb: m[1] });
+      ops.push({ category: 'repo', scope: 'repo-delete', tool: 'gh repo', verb: m[1] });
     } else if (/^(?:\S*\/)?git\s+push\b/.test(seg)) {
-      if (/(?:^|\s)(?:--force|--force-with-lease|-f)\b/.test(seg)) ops.push({ category: 'repo', tool: 'git push', verb: 'force' });
-      else if (/(?:^|\s)(?:--delete|-d)\b/.test(seg)) ops.push({ category: 'repo', tool: 'git push', verb: 'delete' });
-      else if (/\s:[^\s]+/.test(seg)) ops.push({ category: 'repo', tool: 'git push', verb: 'delete-refspec' });
+      if (/(?:^|\s)(?:--force|--force-with-lease|-f)\b/.test(seg)) ops.push({ category: 'repo', scope: 'git-force', tool: 'git push', verb: 'force' });
+      else if (/(?:^|\s)(?:--delete|-d)\b/.test(seg)) ops.push({ category: 'repo', scope: 'git-force', tool: 'git push', verb: 'delete' });
+      else if (/\s:[^\s]+/.test(seg)) ops.push({ category: 'repo', scope: 'git-force', tool: 'git push', verb: 'delete-refspec' });
     }
   }
   return ops;
