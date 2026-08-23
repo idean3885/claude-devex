@@ -102,13 +102,38 @@
 
 1. 어시스턴트는 멈추고, 어떤 행위를 왜 하는지 플랜으로 제시한다
 2. 사용자가 플랜을 검토하고 승인한다
-3. 사용자가 직접 실행한다. `! bash ~/.claude/ops-agent/current/scripts/action-gate-allow.sh on`
-4. 어시스턴트는 그 세션 동안 승인된 행위만 수행한다
+3. 사용자가 직접 실행한다. 차단 메시지가 **감지된 갈래를 담은 명령**을 그대로 제시한다
+4. 어시스턴트는 그 창 동안 그 갈래만 수행한다. 다른 갈래는 다시 차단된다
 5. 마무리할 때 사용자가 `off` (선택)
+
+```bash
+! bash ~/.claude/ops-agent/current/scripts/action-gate-allow.sh on repo-merge
+```
 
 어시스턴트가 이 스크립트를 직접 실행하면 자기 수정으로 차단됩니다. 정상 동작이며 우회하지 않습니다.
 
-세션 허용은 환경 변수 `OPS_AGENT_ACTION_GATE_ALLOW=1` 또는 마커 파일(`~/.claude/ops-agent/.cache/action-gate-allow.json`, 만료 시각과 세션 바인딩을 가짐)로 판정합니다.
+세션 허용은 환경 변수 `OPS_AGENT_ACTION_GATE_ALLOW=1` 또는 마커 파일(`~/.claude/ops-agent/.cache/action-gate-allow.json`, 만료 시각·허용 갈래·세션 바인딩을 가짐)로 판정합니다.
+
+#### 갈래
+
+시간만으로 열면 그 창 안에서 승인 대상이 아니던 행위까지 통과합니다. PR 머지를 위해 연 창에서 기본 브랜치 직접 push 가 통과한 사례가 있습니다. 둘 다 되돌리기 어려운 행위이고 전역 금지 규칙이 있는 쪽이 뒤였습니다.
+
+| 갈래 | 대상 |
+|------|------|
+| `cluster-write` | kubectl · argocd · helm mutation |
+| `repo-merge` | `gh pr merge` |
+| `repo-release` | `gh release create/edit/delete` |
+| `repo-delete` | `gh repo delete/archive` |
+| `git-force` | force push · 원격 브랜치 삭제 |
+| `git-default-push` | 기본 브랜치 직접 push |
+| `worktree-destructive` | `git reset --hard` · `clean` · `branch -D` · `restore` |
+| `all` | 전부 |
+
+갈래는 `category` 보다 좁습니다. `repo-merge` 와 `git-default-push` 는 둘 다 `repo` 라 category 단위로는 나뉘지 않습니다.
+
+갈래를 사람이 고르지 않습니다. 차단 메시지가 감지된 갈래를 담은 명령을 싣고, 사용자는 그대로 실행합니다. 갈래를 좁히면서 열기 절차가 무거워지지 않게 하는 자리가 여기입니다.
+
+TTL 은 창의 길이만 정하고 범위는 정하지 않습니다. 옛 형식(`on 30`)은 전체 개방으로 계속 읽어 진행 중인 창을 끊지 않습니다.
 
 ### 한계
 
