@@ -59,7 +59,13 @@
 
 타입 어휘·제목 형식·체인지로그 분류 이름은 아래 순서로 정한다. 첫 번째로 발견한 것을 쓴다.
 
-1. **선언 슬롯**: `~/.claude/ops-agent/repos/<owner>--<repo>.json`, 없으면 `~/.claude/ops-agent/orgs/<owner>.json` 의 `conventions` 키. `<owner>`·`<repo>` 는 `git remote get-url origin` 에서 얻는다. 스키마와 병합 규칙은 [../../../docs/conventions-slot.md](../../../docs/conventions-slot.md)
+1. **선언 슬롯**: 해석기가 발견한 매니페스트의 `conventions` 키. 스키마와 병합 규칙은 [../../../docs/conventions-slot.md](../../../docs/conventions-slot.md)
+
+   ```bash
+   node ~/.claude/ops-agent/current/scripts/resolve-manifest.mjs
+   ```
+
+   `manifests` 를 나온 순서대로 병합한다 (레포 선언 > org 선언 > 외부 어댑터 org 선언). `notes` 가 비어 있지 않으면 그대로 사용자에게 보인다. org-flow 의 매니페스트 발견과 같은 해석기다
 2. **레포 문서 선언**: 레포 `CLAUDE.md` 에 타입 목록이 적혀 있으면 그것
 3. **최근 이력 표본**: 위 둘이 없으면 최근 커밋 제목에서 표기를 추정하고 **사용자에게 확인한 뒤** 쓴다
 4. **기본값**: 전부 없으면 위 기본 목록
