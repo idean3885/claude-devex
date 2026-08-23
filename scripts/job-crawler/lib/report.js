@@ -27,7 +27,10 @@ function renderReport(results, ctx) {
     lines.push(`## ${r.name}`);
     lines.push('');
     lines.push(`- URL: ${r.url}`);
-    lines.push(`- 공고 수: **${r.count}건**${r.fallback ? ' (selector 미매칭 → 링크 heuristic)' : ''}`);
+    const source = r.listSource === 'declared'
+      ? ` (프로파일 선언 경로, 응답 ${r.listTotal}건 중 마감 ${r.listClosed}건 제외)`
+      : r.fallback ? ' (selector 미매칭 → 링크 heuristic)' : '';
+    lines.push(`- 공고 수: **${r.count}건**${source}`);
     if (r.listUnreached) {
       lines.push(`- **목록 도달 실패**: ${r.listUnreached}`);
       lines.push('  - 위 건수는 공고 수가 아닙니다. 수집 실패이므로 수기 확인이 필요합니다');
