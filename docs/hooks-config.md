@@ -65,6 +65,30 @@ hook 이 내보내는 검출은 두 종류입니다.
 
 카운터가 커버하는 항목과 일부러 빼놓은 항목은 `config/style-rules/base/readability.md` 의 검증 표에 있습니다.
 
+## 레슨런 도구 경계 주입
+
+재발이 잦은 레슨런의 조치 한 줄을 발동 지점에서 주입한다. 근거와 하지 않는 것은 [lessons.md](lessons.md) 에 있다.
+
+선언이 없으면 훅은 조용히 종료한다. 자산을 갖지 않은 프로젝트에 문구가 뜨지 않는다.
+
+| 위치 | 범위 |
+|------|------|
+| `~/.claude/ops-agent/lesson-boundaries.json` | 유저 |
+| `<프로젝트 루트>/.ops-agent/lesson-boundaries.json` | 프로젝트. 유저 선언과 합쳐진다 |
+
+```json
+{
+  "boundaries": {
+    "Write|Edit": ["규모 기준을 먼저 정한다 — knowledge/areas/lessons/scale.md"],
+    "AskUserQuestion": ["묻기 전에 조사로 나오는지 본다 — knowledge/areas/lessons/ask.md"]
+  }
+}
+```
+
+키는 도구 이름 정규식이고 값은 주입할 줄의 배열이다. 한 줄에 조치와 자산 경로를 함께 적는다. 본문은 필요할 때 그 경로로 연다.
+
+훅이 반응하는 도구는 `Write` · `Edit` · `MultiEdit` · `NotebookEdit` · `AskUserQuestion` 이다. 그 밖의 도구는 선언해도 걸리지 않는다. **자리를 늘리는 것이 이 장치의 실패 방식이므로 목록을 늘릴 때는 재발 이력을 먼저 본다.**
+
 ## 훅 실행 예산
 
 훅이 하네스 타임아웃에 잘리면 그 호출의 검사는 성립하지 않는다. 잘렸다는 사실도 남지 않아, 가드가 걸려야 할 자리에서 조용히 빠진다.

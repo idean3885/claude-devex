@@ -27,6 +27,16 @@
             "timeout": 2
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lesson-boundary-pretool.sh\"",
+            "timeout": 3
+          }
+        ]
       }
     ],
     "PostToolUse": [
