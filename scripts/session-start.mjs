@@ -408,6 +408,7 @@ function assembleGlobalClaudeMd() {
 function buildForbiddenWordsContext() {
   try {
     const rules = [];
+    let endingClass = '';
     const sources = [
       join(pluginRoot, 'config', 'forbidden-words.json'),
       join(homedir(), '.claude', 'forbidden-words.local.json'),
@@ -416,9 +417,13 @@ function buildForbiddenWordsContext() {
       if (!existsSync(path)) continue;
       try {
         const parsed = JSON.parse(readFileSync(path, 'utf8'));
+        if (!endingClass && parsed._endingClass) endingClass = parsed._endingClass;
         if (Array.isArray(parsed.rules)) rules.push(...parsed.rules);
       } catch { /* 손상된 로컬 룰은 무시 */ }
     }
+    // %E% 는 어미 묶음 참조다. 주입 문구에도 펼쳐 넣는다. 어시스턴트가 자가 대조하는 것은
+    // 이 문자열이므로, 참조 기호가 남아 있으면 대조할 대상이 실제 패턴과 달라진다.
+    const expand = p => (p || '').replace(/%E%/g, endingClass);
     if (rules.length === 0) return '';
 
     const lines = [
@@ -428,7 +433,7 @@ function buildForbiddenWordsContext() {
       '훅은 응답을 막거나 재작성하지 않으며, 위반이 검출되면 다음 턴에 해당 항목만 통지한다.',
     ];
     for (const rule of rules) {
-      lines.push(`  - 패턴 \`${rule.pattern || ''}\` → 대체 \`${rule.replacement || ''}\` (${rule.reason || ''})`);
+      lines.push(`  - 패턴 \`${expand(rule.pattern)}\` → 대체 \`${rule.replacement || ''}\` (${rule.reason || ''})`);
     }
     return lines.join('\n');
   } catch {
