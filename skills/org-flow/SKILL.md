@@ -74,6 +74,7 @@ node ~/.claude/ops-agent/current/scripts/resolve-manifest.mjs
     "dailylog": "<adapter-id>",
     "apiGuard": "<adapter-id>"
   },
+  "branchPattern": "feature/{ticket}",
   "scriptOverrides": {
     "worktreeCleanup": "<adapter-id>:scripts/<script>.sh"
   }
@@ -244,6 +245,24 @@ bash scripts/pull-mains.sh <project-root>
 - 이슈 상태가 "진행 중"
 - (사내) `providers.dailylog` 정의 시 일일 계획 항목 존재 확인
 
+**Step 5.5: 브랜치명과 분기점 결정**
+
+브랜치명은 매니페스트의 `branchPattern` 을 따른다. 미선언이면 `feature/{ticket}` 이다.
+
+```json
+{ "branchPattern": "feature/{ticket}-{slug}" }
+```
+
+`{slug}` 는 사용자 입력 또는 작업 설명에서 만든다. 번호만으로는 브랜치 목록에서 무슨 작업인지 드러나지 않는다는 컨벤션을 쓰는 조직이 있다. 상태 파일을 만든 뒤 rename 하는 흐름을 없애기 위해 여기서 정한다.
+
+**상위 티켓이 지정되면** 통합 브랜치를 먼저 만든다.
+
+1. 레포마다 통합 브랜치가 원격에 있는지 본다. 없으면 원격 base 에서 직접 만들어 push 한다 (워크트리 불필요)
+2. 하위 워크트리를 그 통합 브랜치에서 분기한다
+3. `parentTicket` 과 `repos.<repo>.parentBranch` 를 상태 파일에 적는다
+
+기능 하나가 하위 작업 여러 건으로 나뉠 때 하위를 통합 라인에 바로 넣으면 미완성 조각이 그 라인에 남는다. 통합 브랜치는 그 조각들이 모이는 자리다.
+
 **Step 6: 워크트리 생성**
 
 ```bash
@@ -251,6 +270,8 @@ scripts/worktree-create.sh .ops-agent/state/org-flow-{ticket}.json
 ```
 
 clone-on-demand: 레포가 없으면 bare clone → 워크트리 생성. vcs.xml 매핑 자동 추가.
+
+`worktree-create.sh` 는 상태 파일의 `branch` 를 그대로 쓴다. Step 5.5 에서 정한 이름이 여기로 온다.
 
 **Step 7: 상태 저장**
 
@@ -260,13 +281,15 @@ clone-on-demand: 레포가 없으면 bare clone → 워크트리 생성. vcs.xml
 {
   "ticket": "123",
   "taskId": "...",
+  "parentTicket": "120",
   "domain": "user",
   "primaryRepo": "frontend",
   "startedAt": "2026-01-01T09:00:00+09:00",
   "repos": {
     "frontend": {
-      "branch": "feature/NNN",
+      "branch": "feature/NNN-요약",
       "base": "main",
+      "parentBranch": "feature/120",
       "worktree": "worktrees/frontend/feature-NNN"
     }
   },
@@ -274,6 +297,14 @@ clone-on-demand: 레포가 없으면 bare clone → 워크트리 생성. vcs.xml
   "currentStage": ""
 }
 ```
+
+| 필드 | 필수 | 뜻 |
+|------|------|-----|
+| `parentTicket` | 선택 | 상위 티켓. 지정되면 통합 브랜치 흐름으로 간다 |
+| `repos.<repo>.parentBranch` | 선택 | 이 레포의 통합 브랜치. 하위 브랜치는 여기서 분기하고 PR 도 여기를 베이스로 연다 |
+| `repos.<repo>.base` | 필수 | 레포의 기본 브랜치. 통합 브랜치가 없으면 하위 브랜치가 여기서 분기한다 |
+
+두 선택 필드가 없으면 기존 동작 그대로다.
 
 - `startedAt` 은 `scripts/worktree-create.sh` 가 start 시점에 tz-aware ISO 8601 로 1회 자동 기록한다(없을 때만). tz 를 포함하므로 finish 단계에서 tz-naive 혼합 비교가 발생하지 않는다.
 
@@ -296,6 +327,12 @@ clone-on-demand: 레포가 없으면 bare clone → 워크트리 생성. vcs.xml
 **Step 2: 각 레포 커밋/PR**
 
 변경 있는 레포마다 해당 레포의 `ops-agent:flow` commit → PR 위임. 커밋 메시지는 기능 변경(What) 기술.
+
+PR 베이스는 `repos.<repo>.parentBranch` 가 있으면 그것, 없으면 `repos.<repo>.base` 다.
+
+**통합 브랜치를 베이스로 열면 쌓인 PR 이 된다.** 머지 순서와 브랜치 삭제 시점은 [flow 의 PR 가이드](../flow/guides/pr.md#쌓인-pr) 를 그대로 따른다. 베이스가 먼저 사라지면 그 위 PR 이 닫히고 되돌릴 수 없다.
+
+통합 브랜치에서 레포 base 로 가는 PR 은 상위 작업이 전부 끝난 뒤 1회 연다.
 
 **Step 3: PR 알림**
 
