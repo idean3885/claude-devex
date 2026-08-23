@@ -111,7 +111,7 @@ provider의 이슈 조회 API로 현재 이슈 상태를 확인한다.
 - **GATE 3 (액션 게이트 통과 프로토콜)**: 액션 게이트(`scripts/pre-tool-use.mjs`)가 되돌리기 어려운 행위(PR 머지·릴리즈·force push·리소스 삭제 등)를 차단하면, 어시스턴트가 게이트를 스스로 열지 않는다. 판정 주체는 항상 사람이다.
   1. 어시스턴트는 멈추고, 어떤 gated 행위를 왜 하는지 플랜으로 제시한다 (자율 진행 범위 명시)
   2. 사용자가 플랜을 검토·명시 승인한다
-  3. 사용자가 직접 실행한다: `! bash "<플러그인>/scripts/action-gate-allow.sh" on` (또는 해당 명령을 `!` 로 직접 실행)
+  3. 사용자가 직접 실행한다: `! bash ~/.claude/ops-agent/current/scripts/action-gate-allow.sh on` (차단 메시지가 같은 경로를 싣는다)
   4. 어시스턴트는 그 세션 동안 승인된 gated 행위만 수행한다
   5. 마무리 시 사용자가 `off` (선택)
 

@@ -260,6 +260,24 @@ function migrateOmcStateToOpsAgent() {
   } catch { /* non-critical */ }
 }
 
+// --- Maintain ~/.claude/ops-agent/current -> active plugin root ---
+// 소비자와 안내 문구가 참조할 버전 무관 진입점 하나. 캐시 디렉토리 이름은 버전이라
+// 갱신 때마다 바뀌고, 소비자가 글롭으로 찾으면 정렬 규칙에 따라 낡은 버전을 집는다.
+// 안내 문구에 버전이 들어가면 그 문구를 복사해 둔 사용자가 나중에 옛 스크립트를 실행한다.
+//
+// cleanupStaleVersions 는 이미 설치됐던 버전 디렉토리만 잇는다. 한 번도 설치된 적 없는
+// 버전이 문구에 들어가면 그 경로는 없다. 고정 경로는 그 조건에 걸리지 않는다.
+function linkCurrentRoot() {
+  try {
+    // 설치된 플러그인만 이 링크의 주인이다. 개발 워크트리에서 이 스크립트를 실행해도
+    // 링크가 그쪽으로 넘어가지 않는다. 넘어가면 워크트리를 지운 뒤 링크가 끊기고,
+    // 그 시점에 게이트 안내가 없는 경로를 싣는다.
+    if (!parseSemver(pluginRoot.split('/').pop())) return;
+    execSync(`mkdir -p "${opsAgentGlobal}"`, { timeout: 1000, stdio: 'ignore' });
+    execSync(`ln -sfn "${pluginRoot}" "${join(opsAgentGlobal, 'current')}"`, { timeout: 1000, stdio: 'ignore' });
+  } catch { /* non-critical */ }
+}
+
 // --- Mirror style-rules SSOT to ~/.claude/ops-agent/style-rules/ ---
 // ops-agent 의 base/extensions 룰을 사용자 스코프로 미러링한다.
 // 외부 어댑터 등 소비자는 이 경로를 참조한다 (ops-agent 캐시 버전 디렉토리는 갱신 시 바뀌므로).
@@ -425,6 +443,7 @@ function syncMarketplace() {
 // --- Execute ---
 ensurePluginGit();
 cleanupStaleVersions();
+linkCurrentRoot();
 syncMarketplace();
 syncPluginVersion();
 ensurePluginGitIdentity();
