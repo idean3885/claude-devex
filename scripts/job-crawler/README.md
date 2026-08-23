@@ -42,7 +42,7 @@ config/job-crawler/<name>.json
 ## 실행
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/job-crawler/crawl.js            # 프로파일 전체 대상
+node ~/.claude/ops-agent/current/scripts/job-crawler/crawl.js      # 프로파일 전체 대상
 node .../crawl.js 대상A 대상B                                       # 이름 부분 일치로 좁힘
 node .../crawl.js --threshold 3                                    # 임계값 덮어쓰기
 node .../crawl.js --url https://... --name 이름                     # 프로파일 없는 대상 즉석 추가
