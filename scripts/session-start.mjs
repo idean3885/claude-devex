@@ -287,6 +287,27 @@ function linkCurrentRoot() {
 // 진행 중인 다른 세션도 즉시 새 규칙을 읽는다. 그래서 소비자가 알아야 하는 것은 갱신 시점이
 // 아니라 지금 읽는 규칙이 몇 버전인가다. VERSION 을 함께 기록해 그것을 판정할 수 있게 한다.
 // 없으면 이미 고쳐진 결함을 다시 제기하게 된다 (#207).
+// --- Seed user-scope resource directories ---
+// 유저 스코프에 두기로 한 자원은 그 자리를 만드는 주체도 함께 정해져야 한다.
+// 스킬이 자기 계약의 전제(디렉토리 존재)를 스스로 갖추지 않으면 첫 사용이 매치 실패로 끝나고,
+// 소비 프로젝트는 디렉토리부터 손으로 만들어야 한다.
+//
+// 자리만 만들고 내용은 넣지 않는다. example 은 플러그인 안에 있고 경로로 안내한다.
+// 비어 있는 디렉토리와 example 이 복사된 디렉토리는 다른 상태이고, 후자는 지우지 않으면
+// 갱신 때마다 낡은 사본이 남는다.
+const USER_SCOPE_DIRS = [
+  join(homedir(), '.claude', 'advisor', 'profiles'),
+];
+
+function seedUserScopeDirs() {
+  for (const dir of USER_SCOPE_DIRS) {
+    try {
+      if (existsSync(dir)) continue;
+      execSync(`mkdir -p "${dir}"`, { timeout: 1000, stdio: 'ignore' });
+    } catch { /* non-critical */ }
+  }
+}
+
 function mirrorStyleRules() {
   try {
     const src = join(pluginRoot, 'config', 'style-rules');
@@ -448,6 +469,7 @@ syncMarketplace();
 syncPluginVersion();
 ensurePluginGitIdentity();
 mirrorStyleRules();
+seedUserScopeDirs();
 assembleGlobalClaudeMd();
 migrateOmcStateToOpsAgent();
 
