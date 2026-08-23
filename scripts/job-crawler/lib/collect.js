@@ -66,7 +66,7 @@ function dedupe(items) {
 
 async function collectOne(browser, name, cfg, ctx) {
   const page = await newPage(browser);
-  const result = { name, url: cfg.url, count: 0, jobs: [], error: null, fallback: false };
+  const result = { name, url: cfg.url, count: 0, jobs: [], error: null, fallback: false, listUnreached: null };
 
   try {
     await gotoWith(page, cfg.url, resolveGoto(cfg, LIST_GOTO));
@@ -110,6 +110,20 @@ async function collectOne(browser, name, cfg, ctx) {
       .sort((a, b) => b.score - a.score);
 
     result.count = result.jobs.length;
+
+    // 목록 도달 실패 판정. fallback 이 내비게이션·푸터 링크를 잡으면 건수가 0 이 아니라
+    // 소수로 나오고, 리포트만 보면 "공고가 적다" 로 읽힌다. 실제로는 수집 실패다.
+    //
+    // 판정 신호는 링크가 공고를 가리키지 않는다는 것이다. href 가 없어 전부 목록 URL 로
+    // 떨어졌거나, 서로 다른 공고인데 URL 이 하나뿐이면 그 목록에는 도달하지 못했다.
+    if (result.fallback) {
+      const urls = new Set(result.jobs.map((j) => j.url));
+      if (result.jobs.length === 0) {
+        result.listUnreached = 'selector 미매칭 + 링크 heuristic 도 0건';
+      } else if (urls.size === 1) {
+        result.listUnreached = `링크 heuristic 결과가 전부 같은 URL (${result.jobs.length}건)`;
+      }
+    }
   } catch (e) {
     result.error = e.message;
   } finally {

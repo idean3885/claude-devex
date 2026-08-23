@@ -78,7 +78,10 @@ async function enrichDetails(browser, result, ctx, cfg = {}) {
     try {
       page = await fetchPage(browser, j.url, goto);
     } catch (e) {
+      // 상세를 열지 못했으면 추천 전용 판정이 성립하지 않는다. 확인한 것과 같은
+      // 판정으로 두면 자가 지원이 불가한 공고가 핏 후보에 남는다.
       j.detailError = e.message;
+      j.verdict = '상세 미확인';
       continue;
     }
 
@@ -105,7 +108,14 @@ async function enrichDetails(browser, result, ctx, cfg = {}) {
     result.count = result.jobs.length;
   }
 
-  return { examined: targeted.length, skipped: fits.length - targeted.length, expanded };
+  const failed = targeted.filter((j) => j.detailError);
+  return {
+    examined: targeted.length,
+    skipped: fits.length - targeted.length,
+    expanded,
+    failed: failed.length,
+    failReasons: [...new Set(failed.map((j) => j.detailError))].slice(0, 3),
+  };
 }
 
 module.exports = { detectReferralOnly, compactDetail, fetchPage, fetchDetail, enrichDetails };

@@ -18,6 +18,9 @@ function renderReport(results, ctx) {
   lines.push('');
   lines.push(`- 임계값: score >= ${ctx.threshold}`);
   lines.push(`- 대상 수: ${results.length}`);
+  // 상세 확인이 꺼진 회차와 켜진 회차의 리포트가 같은 모양이면, 추천 전용이 걸러지지
+  // 않은 결과를 걸러진 것으로 읽는다.
+  lines.push(`- 상세 확인: ${ctx.detail ? `켜짐 (상한 ${ctx.detailCap}건)` : '**꺼짐 — 추천 전용·상세 실격 판정이 수행되지 않았습니다**'}`);
   lines.push('');
 
   for (const r of results) {
@@ -25,6 +28,13 @@ function renderReport(results, ctx) {
     lines.push('');
     lines.push(`- URL: ${r.url}`);
     lines.push(`- 공고 수: **${r.count}건**${r.fallback ? ' (selector 미매칭 → 링크 heuristic)' : ''}`);
+    if (r.listUnreached) {
+      lines.push(`- **목록 도달 실패**: ${r.listUnreached}`);
+      lines.push('  - 위 건수는 공고 수가 아닙니다. 수집 실패이므로 수기 확인이 필요합니다');
+    }
+    if (r.detailFailed) {
+      lines.push(`- **상세 확인 실패 ${r.detailFailed}건**: ${(r.detailFailReasons || []).join(' · ')}`);
+    }
     if (r.expanded) {
       lines.push(`- 묶음 공고를 지원 단위 **${r.expanded}건**으로 펼침`);
     }
@@ -39,9 +49,10 @@ function renderReport(results, ctx) {
       continue;
     }
 
-    const fits = r.jobs.filter((j) => j.score >= ctx.threshold && !j.referralOnly);
+    const unchecked = r.jobs.filter((j) => j.detailError);
+    const fits = r.jobs.filter((j) => j.score >= ctx.threshold && !j.referralOnly && !j.detailError);
     const referral = r.jobs.filter((j) => j.referralOnly);
-    const rest = r.jobs.filter((j) => j.score < ctx.threshold && !j.referralOnly);
+    const rest = r.jobs.filter((j) => j.score < ctx.threshold && !j.referralOnly && !j.detailError);
 
     if (r.detailSkipped) {
       lines.push(`- 상세 미확인 ${r.detailSkipped}건 (detail-cap ${ctx.detailCap} 초과)`);
@@ -71,6 +82,19 @@ function renderReport(results, ctx) {
           lines.push(j.detail);
           lines.push('```');
         }
+      }
+    }
+
+    if (unchecked.length > 0) {
+      lines.push('');
+      lines.push('### 상세 미확인 (판정 보류)');
+      lines.push('');
+      lines.push('점수는 임계 이상이나 상세를 열지 못해 추천 전용 여부를 판정하지 못했습니다. 핏 후보와 같은 자리에 두지 않습니다.');
+      lines.push('');
+      lines.push('| score | 제목 | 사유 |');
+      lines.push('|---|---|---|');
+      for (const j of unchecked) {
+        lines.push(`| ${j.score} | [${esc(j.title)}](${j.url}) | ${esc(j.detailError)} |`);
       }
     }
 
