@@ -41,10 +41,45 @@ import {
   loadConfig, isEmptyConfig, parseRemote, lookupVisibility, shellQuote, findKeywordHits,
 } from './confidential-rules.mjs';
 
+// ─── 실행 예산 ───
+// 훅이 하네스 타임아웃에 잘리면 그 호출의 검사는 성립하지 않고, 잘렸다는 사실도 남지 않는다.
+// 가드가 걸려야 할 자리에서 조용히 빠지는 상태다. 그래서 잘리기 전에 스스로 답한다.
+//
+// 정상 경로 실측은 전체 37ms 이고 그중 노드 기동이 35ms 다. git 호출은 각 11ms 다.
+// 예산 1500ms 는 그 40배이므로 정상 판정을 자르지 않는다. 예산을 넘기는 상황은
+// 검사 대상이 커서가 아니라 머신 경합·입력 지연 쪽이고, 그때는 판정을 포기하고 알린다.
+const HOOK_START = Date.now();
+const HOOK_BUDGET_MS = Number(process.env.OPS_AGENT_HOOK_BUDGET_MS) || 1500;
+const remainingMs = () => HOOK_BUDGET_MS - (Date.now() - HOOK_START);
+// 하위 프로세스 타임아웃은 남은 예산 안에서만 준다. 내부 타임아웃 합이 예산을 넘으면
+// 각 호출은 제 시간을 지켜도 훅 전체가 잘린다 (remote 2000 + diff 1200 > 예산이었다).
+const budgeted = (want) => Math.max(150, Math.min(want, remainingMs()));
+let budgetExceeded = false;
+// 검사를 마치지 못한 채 통과시키는 것은 통과가 아니라 미검사다. 둘을 같은 모양으로 두지 않는다.
+function noteBudgetExceeded(where) {
+  if (budgetExceeded) return;
+  budgetExceeded = true;
+  process.stderr.write(`[ops-agent 훅] 실행 예산 ${HOOK_BUDGET_MS}ms 초과 — ${where} 검사를 마치지 못했습니다. 이 호출은 검사되지 않았습니다.\n`);
+}
+
 // ─── stdin 수집 ───
+// EOF 를 기다리는 자리라 호출 측이 닫지 않으면 여기서 멈춘다. 예산 안에서만 기다린다.
 let input = '';
 process.stdin.setEncoding('utf8');
-for await (const chunk of process.stdin) { input += chunk; }
+{
+  let timer;
+  const stdinDeadline = new Promise(res => { timer = setTimeout(() => res('deadline'), Math.max(150, remainingMs())); });
+  const collect = (async () => {
+    for await (const chunk of process.stdin) { input += chunk; }
+    return 'eof';
+  })();
+  const which = await Promise.race([collect, stdinDeadline]);
+  clearTimeout(timer);
+  if (which === 'deadline') {
+    noteBudgetExceeded('입력 수집');
+    process.exit(0); // 판정 없음. 하네스 기본 동작(통과)에 맡기고 사실만 남긴다
+  }
+}
 
 // ─── 대외비 가드 ───
 const DISABLE = process.env.OPS_AGENT_CONFIDENTIAL_DISABLE === '1';
@@ -145,7 +180,8 @@ if (!DISABLE) {
       }
 
       // 도메인 What 추상화 가드: 커밋·PR·이슈 본문에서 구현 세부 노출 차단
-      if (!WHAT_GUARD_DISABLE) {
+      if (!WHAT_GUARD_DISABLE && remainingMs() <= 0) noteBudgetExceeded('What 추상화 가드');
+      if (!WHAT_GUARD_DISABLE && remainingMs() > 0) {
         const whatResult = runWhatAbstractionGuard(command);
         if (whatResult.blocked) {
           const header = WHAT_GUARD_DRYRUN
@@ -175,7 +211,8 @@ if (!DISABLE) {
 
       // 액션 게이트: 되돌리기 어려운/외부 영향 행위(클러스터 mutation·PR 머지·릴리즈·force push
       // ·리소스 삭제)는 세션 명시 허용 없으면 차단한다. 권한을 추측해 실행하는 사고를 기계적으로 막는다.
-      if (!GATE_DISABLE) {
+      if (!GATE_DISABLE && remainingMs() <= 0) noteBudgetExceeded('액션 게이트');
+      if (!GATE_DISABLE && remainingMs() > 0) {
         const gateResult = runActionGate(command, hookInput.session_id, hookInput.cwd);
         if (gateResult.blocked) {
           const header = GATE_DRYRUN
@@ -349,14 +386,14 @@ function collectCommitDiffTexts(command, cwd, allowPaths, texts) {
   let out = '';
   try {
     out = execSync(`git diff ${range} --unified=0 --no-color`, {
-      cwd, encoding: 'utf8', timeout: 1200, maxBuffer: 16 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'],
+      cwd, encoding: 'utf8', timeout: budgeted(1200), maxBuffer: 16 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'],
     });
   } catch {
     // 최초 커밋(HEAD 없음)·git 아님 등. --cached 로 한 번 더 시도한다.
     if (range === 'HEAD') {
       try {
         out = execSync('git diff --cached --unified=0 --no-color', {
-          cwd, encoding: 'utf8', timeout: 1200, maxBuffer: 16 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'],
+          cwd, encoding: 'utf8', timeout: budgeted(1200), maxBuffer: 16 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'],
         });
       } catch { return false; }
     } else {
@@ -535,7 +572,7 @@ function resolveTarget(command, cwd, internalHosts) {
     let url = '';
     try {
       url = execSync('git remote get-url origin 2>/dev/null', {
-        cwd: effectiveCwd, encoding: 'utf8', timeout: 2000,
+        cwd: effectiveCwd, encoding: 'utf8', timeout: budgeted(900),
       }).trim();
     } catch {
       // 판별 불가는 public 으로 닫는다. 대외비 가드에서 fail-open 은 방향이 거꾸로다.
@@ -702,7 +739,7 @@ function detectGatedActions(command, hookCwd) {
   const dir = extractCwdFromCommand(command, hookCwd);
   const runGit = args => {
     try {
-      return execSync(`git ${args}`, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 800 });
+      return execSync(`git ${args}`, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: budgeted(800) });
     } catch {
       return null;
     }
