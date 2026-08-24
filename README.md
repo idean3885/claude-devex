@@ -211,6 +211,8 @@ bash ~/.claude/ops-agent/current/scripts/action-gate-allow.sh status
 | 문서의 목적과 범위 (`base/purpose.md`) | Barbara Minto 「The Pyramid Principle」(질문 하나에 답하는 구조), Google Technical Writing Course(착수 전 독자·범위 정의) |
 | 톤·구두점·분량 (`base/tone.md` 등) | 자체 작성 |
 
+차용 원천의 채택 판본·항목 번호 대응·마지막 대조일은 [references/upstream.md](config/style-rules/references/upstream.md) 가 갖습니다. 번호가 같아도 규칙이 다른 쌍이 있으므로 대조 전에 그 표를 봅니다.
+
 문헌 근거와 지표 정의는 세션 시작 미러 대상이 아닙니다. 세션 예산을 지키기 위해 추적이 필요할 때만 참조합니다.
 
 무엇을 AI 티로 보고 무엇을 저자의 취향으로 남길지는 [docs/adr/0001-ai-tell-removal-priority.md](docs/adr/0001-ai-tell-removal-priority.md) 에서 정했습니다. 전부 지우면 글에서 사람이 사라집니다.
