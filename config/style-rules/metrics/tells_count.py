@@ -359,6 +359,10 @@ _PHYSICAL_VERB_RE = re.compile(
             r"잇(?:는|던|고|게|기|지|도록|자)",
             # 붙이다 — `덧붙여` 도 같은 계열이라 포함한다.
             r"이어 ?붙|붙(?:이는|이고|이게|입니다)|붙인|붙일|붙였|붙여",
+            # 밟다: 추상 대상(절차·단계)에 붙는 물리 동작. 물리 용례(페달을 밟다)는
+            # 대상이 물리라 T8 판정 1(대상이 추상인가)에서 걸러진다. 앵커는 대상을
+            # 판정하지 못하므로 절대치로 위반을 세지 않는다.
+            r"밟(?:는|던|고|게|기|지|도록|자|아|은|을|았|혀)",
             # 벗기다 — `벗겨` 가 `벗겨내다` 계열을 함께 덮는다.
             r"벗기(?:는|고|게)|벗긴|벗길|벗깁니다|벗겨",
             # 빠지다 — `빠르다`(어간 빠르)와 어미가 달라 빠진다.
@@ -466,6 +470,13 @@ def compute_all(text: str, strip_code_blocks: bool = True) -> dict[str, Any]:
             "physical_verb_count": physical_verb_count(scan),            # T8
             "absolutist_count": absolutist_count(scan),                  # D-17
         },
+        "covers": [
+            "A-4", "A-9", "A-6", "A-7", "C-5", "C-6", "C-10", "T1", "T8", "D-17",
+        ],
+        "uncovered_note": (
+            "위 목록에 없는 규칙은 이 지표가 재지 않는다. "
+            "출력에 0 으로 나오지 않는 것은 통과가 아니라 미측정이다."
+        ),
         "thresholds": {
             "change_rate_warn": CHANGE_RATE_WARN,
             "change_rate_abort": CHANGE_RATE_ABORT,

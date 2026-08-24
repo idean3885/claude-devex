@@ -189,8 +189,9 @@ PU5 대조는 축 1 의 문장 단위 인과 검사와 다릅니다. 문장이 �
 7. Blockquote 렌더링 (BQ1)
 8. 저자 톤 (T1-T17)
 9. 한국어 구두점 (PN1-PN6)
-10. 산출물 분량 (LN1-LN2): [base/length.md](../../config/style-rules/base/length.md)
-11. 에이전트가 읽는 문서 (AU1-AU6): [base/authoring.md](../../config/style-rules/base/authoring.md). 위 "읽는 쪽 판정" 에 걸릴 때만 적용
+10. 문서의 목적 (PU6 근거 확인 상태): [base/purpose.md](../../config/style-rules/base/purpose.md)
+11. 산출물 분량 (LN1-LN2): [base/length.md](../../config/style-rules/base/length.md)
+12. 에이전트가 읽는 문서 (AU1-AU8): [base/authoring.md](../../config/style-rules/base/authoring.md). 위 "읽는 쪽 판정" 에 걸릴 때만 적용
 
 LN 은 마지막에 적용한다. 톤·AI 티 교정으로 살아나는 섹션을 먼저 삭제하지 않기 위해서다.
 총량 측정은 위반 항목이 아니라 LN1·LN2 를 언제 적용할지 정하는 절차다. 기준값 표본이 3편 미만이면 총량 판정을 건너뛴다.
@@ -241,6 +242,7 @@ AI 티 검증 ([ai-tells.md](../../config/style-rules/base/ai-tells.md) A~K):
 - 가독성 필수 규칙: {N}/{M} 통과
 - 가독성 권장 규칙: {N}/{M} 통과
 - AI 티: S1 {n}건 · S2 {n}건 → 품질 등급 {A | B | C | D}
+- 지표가 재지 않은 규칙: {목록 또는 없음}. 지표 출력의 `covers` 에 없는 항목은 판정하지 않았다는 뜻이므로 0건으로 적지 않는다
 - 분량: {글자 수}자 / 기준 {기준값}자 ({±N%}) · 채움 섹션 {n}건 · 밀도 {양호 | 제안 n건}
   (기준 표본 3편 미만이면 `총량 판정 건너뜀` 으로 표기)
 
@@ -249,6 +251,11 @@ AI 티 검증 ([ai-tells.md](../../config/style-rules/base/ai-tells.md) A~K):
 
 | 제안 (권장) | 위치 | 교정안 |
 |------------|------|--------|
+
+### 근거 확인 상태 (`purpose.md` PU6)
+- 원천을 열어 확인한 주장: {자리와 함께 나열}
+- 미확인 주장: {나열 또는 없음}
+- 결론이 미확인 주장에만 의존하면 판정을 내지 않는다
 
 ### 종합 판정: {게시 가능 | 수정 후 가능 | 보류}
 {종합 소견}
