@@ -27,6 +27,7 @@
     antithesis_count                  → C-10 대칭 대구 (S1 구조 게이트, 신규)
     em_dash_count                     → T1 em dash (S1, 합격선 0)
     physical_verb_count               → T8 물리 조작 동사 (진단 앵커, 절대치 판정 금지)
+    absolutist_count                  → D-17 근거보다 절대적인 양화 (진단 앵커, 절대치 판정 금지)
 
 한국어 처리 근사:
     - 어절: 공백 기준 분리 후 양끝 구두점 제거
@@ -404,6 +405,37 @@ def physical_verb_count(text: str) -> int:
     return len(_PHYSICAL_VERB_RE.findall(text))
 
 
+# ─────────────────────────────────────────────────────────────
+# 11. absolutist_count (D-17 근거보다 절대적인 양화, 진단 앵커)
+# ─────────────────────────────────────────────────────────────
+_ABSOLUTIST_RE = re.compile(
+    "|".join(
+        [
+            r"(?<![가-힣])모든(?![가-힣])",
+            r"(?<![가-힣])전부(?![가-힣])",
+            r"(?<![가-힣])항상(?![가-힣])",
+            r"(?<![가-힣])절대(?![가-힣])",
+            r"(?<![가-힣])언제나(?![가-힣])",
+            r"(?<![가-힣])전혀(?![가-힣])",
+            r"(?<![가-힣])결코(?![가-힣])",
+        ]
+    )
+)
+
+
+def absolutist_count(text: str) -> int:
+    """절대 양화 어휘의 출현 수.
+
+    `physical_verb_count` 와 같은 진단 앵커다. 절대치로 위반을 판정하지 않는다.
+    전수를 확인한 문장에서 `모든` 은 정확한 표현이다. 판정 기준은 그 범위를
+    실제로 확인했는지다. 이 값이 높으면 확인 범위를 대조할 자리를 알려 준다.
+
+    G 계열(근거 없는 완곡)과 반대 방향이다. 한쪽만 잡으면 그 처방이
+    다른 쪽 위반을 만든다.
+    """
+    return len(_ABSOLUTIST_RE.findall(text))
+
+
 # ---------------------------------------------------------------------------
 # 집계
 # ---------------------------------------------------------------------------
@@ -432,6 +464,7 @@ def compute_all(text: str, strip_code_blocks: bool = True) -> dict[str, Any]:
             "antithesis_count": antithesis_count(scan),                  # C-10
             "em_dash_count": em_dash_count(scan),                        # T1
             "physical_verb_count": physical_verb_count(scan),            # T8
+            "absolutist_count": absolutist_count(scan),                  # D-17
         },
         "thresholds": {
             "change_rate_warn": CHANGE_RATE_WARN,
