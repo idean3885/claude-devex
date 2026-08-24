@@ -25,6 +25,8 @@
 | Hyland, K. (1998). *Hedging in Scientific Research Articles*. John Benjamins, Pragmatics and Beyond 54 | 완곡이 근거 강도를 표시하는 장치다. 지식이 텍스트를 통해 승인되는 방식의 중심이다 | `G` 계열 처방 | 2026-08-24 |
 | Google developer documentation style guide, Tone and content | 완곡 조항이 없다. 지시를 무르게 만드는 표현과 자리채움구를 금지한다 | `G` 계열 지시문 예외 | 2026-08-24 |
 | Microsoft Writing Style Guide, Word choice | 완곡 조항이 없다. 같은 뜻이면 같은 단어를 쓰라는 일관성 요구가 중심이다 | 같음 | 2026-08-24 |
+| Diátaxis (Daniele Procida, diataxis.fr) | 두 기준으로 네 목적을 나눈다. 실천 지식과 이론 지식, 습득과 적용. 2021년부터 소프트웨어 문서를 넘어 과학 연구·기업·조직 관리·교육까지 적용 범위를 넓혔다 | `extensions/profiles.md` 목적 분류 | 2026-08-24 |
+| IMRaD · ANSI Z39.16 (1979, 1985 재확인) | 측정·시험 보고의 구조 표준. 창시자가 없고 점진적으로 채택됐다. 채택 경위는 Sollaci & Pereira, *J Med Libr Assoc* 2004;92(3):364-7 이 1935~1985 표본으로 조사했다 | 같음 · `extensions/issue.md` ISS6 | 2026-08-24 |
 
 지시·절차 문서와 관측 보고가 완곡에 대해 반대로 보이는 것은 두 표준이 부딪히는 것이 아니다. 대상 문서가 다르다. 지시문에는 완곡이 들어갈 이유가 없다. 관측 결과에는 근거 강도를 표시할 이유가 있다.
 
