@@ -1,6 +1,6 @@
 ---
 name: org-flow
-description: 멀티레포 오케스트레이션 + 사내/퍼블릭 provider 분기. 최초 호출 시 org 셋업 마법사로 매니페스트 생성. 트리거 "org-flow", "멀티레포", "multi-repo", "/org-flow", "org 셋업".
+description: 멀티레포 오케스트레이션 + 사내/퍼블릭 provider 분기. 최초 호출 시 org 셋업 마법사로 매니페스트 생성. 트리거 "org-flow", "멀티레포", "multi-repo", "/org-flow", "org 셋업", "리뷰 요청", "review request", "submit", "서브밋", "org 시작", "org 완료".
 ---
 
 # Multi-Repo Orchestration (org-flow)
@@ -17,6 +17,9 @@ description: 멀티레포 오케스트레이션 + 사내/퍼블릭 provider 분�
 식별과 매니페스트 발견은 [`scripts/resolve-manifest.mjs`](../../scripts/resolve-manifest.mjs) 가 수행한다. commit 단계의 컨벤션 슬롯 해석과 같은 해석기를 쓴다.
 
 - "/org-flow", "org-flow", "멀티레포", "multi-repo", "org 셋업"
+- 서브커맨드 이름으로도 부른다: "리뷰 요청", "review request", "submit", "서브밋", "org 시작", "org 완료"
+
+**서브커맨드 이름을 트리거에 싣는다.** 사용자는 스킬 이름이 아니라 하려는 일의 이름으로 부른다. 서브커맨드 이름이 빠져 있으면 그 요청이 인접 스킬(단일 레포 `flow` 의 "커밋"·"PR")로 새고, 멀티레포 게이트가 조용히 통째로 건너뛰어진다. 산출물만 보면 정상으로 보여서 발견이 늦다.
 
 ## 최초 호출: 셋업 마법사
 
@@ -316,9 +319,11 @@ clone-on-demand: 레포가 없으면 bare clone → 워크트리 생성. vcs.xml
 
 관련 레포의 git 상태 + 파이프라인 진행률을 통합 조회한다.
 
-### `/org-flow submit`
+### `/org-flow submit` (리뷰 요청)
 
-검증 → 커밋 → PR → 알림. 각 레포에서 `ops-agent:flow` commit/PR 위임.
+검증 → 커밋 → PR → **리뷰 요청**. 각 레포에서 `ops-agent:flow` commit/PR 위임.
+
+이 단계의 이름은 **리뷰 요청** 이다. 서브커맨드 키는 `submit` 으로 두되 사용자에게 말할 때도 문서에 적을 때도 리뷰 요청이라고 쓴다. PR 을 열어 두기만 하면 아무도 그 사실을 모르므로, 사람에게 요청이 도달한 시점이 이 파이프라인의 완료 조건이다.
 
 **Step 1: 완료 게이트**
 
@@ -334,9 +339,13 @@ PR 베이스는 `repos.<repo>.parentBranch` 가 있으면 그것, 없으면 `rep
 
 통합 브랜치에서 레포 base 로 가는 PR 은 상위 작업이 전부 끝난 뒤 1회 연다.
 
-**Step 3: PR 알림**
+**Step 3: 리뷰 요청 발송 (GATE)**
 
 매니페스트의 `providers.notify` 어댑터에 위임 (외부 어댑터 또는 ops-agent 내장).
+
+- 레포마다 1회 발송하고 응답의 성공 여부를 확인한다. 실패면 이 단계는 실패다
+- 발송 여부를 사용자에게 되묻지 않는다. 리뷰 요청은 완료 조건이지 선택 항목이 아니다
+- Step 2 에서 멈추고 완료라고 보고하지 않는다
 
 ### `/org-flow finish`
 
