@@ -140,6 +140,24 @@ function buildSkillContext(provider) {
     if (existsSync(builtinPath)) providerPath = builtinPath;
   }
 
+  // 표에 싣는 스킬은 여기서 고르되, 트리거 문구는 각 SKILL.md 가 원천이다.
+  // 키워드를 여기에 복제하면 스킬 쪽 변경이 표에 반영되지 않은 채로 남고,
+  // 빠진 키워드로 부른 요청은 인접 스킬로 새어 그 스킬의 게이트가 조용히 건너뛰어진다.
+  const TABLE_SKILLS = [
+    { name: 'flow', extra: 'natural language change request' },
+    { name: 'org-flow' },
+    { name: 'setup' },
+  ];
+
+  const rows = TABLE_SKILLS.map(({ name, extra }) => {
+    const skillPath = join(skillsDir, name, 'SKILL.md');
+    const triggers = readSkillTriggers(skillPath);
+    if (!triggers) return '';
+    return `| ${extra ? `${triggers}, ${extra}` : triggers} | ${skillPath} |`;
+  }).filter(Boolean);
+
+  if (rows.length === 0) return '';
+
   return [
     '',
     'Natural language skill triggers — on match, read the guide file and follow its workflow.',
@@ -149,9 +167,24 @@ function buildSkillContext(provider) {
     '',
     '| Trigger | Guide |',
     '|---------|-------|',
-    `| "flow", "플로우", "이슈", "issue", "커밋", "commit", "PR", "풀리퀘", "spec", "명세", natural language change request | ${join(skillsDir, 'flow', 'SKILL.md')} |`,
-    `| "setup", "설정" | ${join(skillsDir, 'setup', 'SKILL.md')} |`,
+    ...rows,
   ].join('\n');
+}
+
+// SKILL.md frontmatter 의 description 에서 `트리거 ...` 뒤의 인용 목록을 그대로 읽는다.
+function readSkillTriggers(skillPath) {
+  if (!existsSync(skillPath)) return '';
+  let description;
+  try {
+    const head = readFileSync(skillPath, 'utf8').split('---')[1] || '';
+    description = (head.match(/^description:\s*(.+)$/m) || [])[1] || '';
+  } catch {
+    return '';
+  }
+  const after = description.split(/트리거\s*/)[1];
+  if (!after) return '';
+  const quoted = after.match(/"[^"]+"/g);
+  return quoted ? quoted.join(', ') : '';
 }
 
 // --- Auto-sync plugin version in installed_plugins.json (no dir rename) ---
