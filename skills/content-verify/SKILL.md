@@ -1,6 +1,6 @@
 ---
 name: content-verify
-description: 마크다운 콘텐츠 검증. 품질 3축(사실·구조·독립가치) + 가독성·톤·구두점·AI 티 체크리스트. 사후(standalone)와 사전(inline) 이중 모드. 트리거 "검증", "verify", "가독성 검사", "readability check", "AI 티 검사", "윤문".
+description: 글 교정. 규칙과 대조해 위반 위치를 찾는 단계. 품질 3요소(사실·구조·독립가치) + 가독성·톤·구두점·AI 티 체크리스트. 사후(standalone)와 사전(inline) 이중 모드. 트리거 "교정", "검증", "verify", "가독성 검사", "AI 티 검사", "윤문".
 ---
 
 # 콘텐츠 검증
