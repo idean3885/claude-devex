@@ -152,7 +152,7 @@ main ────────────────●─────
 
 - [ ] **버전 범프**: VERSION, CHANGELOG.md, plugin.json, marketplace.json 4곳 모두 갱신 확인
 - [ ] 스킬 파일 존재 확인 (`skills/` 전체 + `skills/flow/guides/`)
-- [ ] Mermaid 다이어그램 렌더링 확인 (README: 작업 순환·계층·이슈 플로우 / docs/usage.md: 규칙 순서)
+- [ ] 다이어그램 확인. README 는 아스키 플로우만 쓴다 (mermaid 0장). `docs/usage.md` 의 mermaid 1장은 렌더 확인
 - [ ] CLAUDE.md 템플릿 부분과 프로젝트 부분 구분 유지
 - [ ] 적용 사례 레포에서 스킬이 정상 동작하는지 확인
 
