@@ -491,7 +491,7 @@ base 표의 판정은 다음 부속 자료로 뒷받침된다. 상시 미러 대
 
 | 자료 | 위치 | 역할 |
 |------|------|------|
-| 정량 지표 정의 | `../metrics/metrics-spec.md` | 번역학 3축 14지표 정의, 패턴 연계, speculative 플래그 |
+| 정량 지표 정의 | `../metrics/metrics-spec.md` | 번역 보편소 셋 기반 14지표 정의, 패턴 연계, speculative 플래그 |
 | 슬림 카운터 | `../metrics/tells_count.py` | baseline 무의존 순수 카운터 (`change_rate`, 이중피동·이중조사·대명사밀도·light verb·대구 카운트). "정확도 우선" 시 선택 실행 |
 | 학술 근거 | `../references/scholarship.md` | 8유형 번역투 학자 계보, PE1~15 체크리스트↔A-ID 매핑, caveat(A-6 조건부·A-1/I-1 강등 근거) |
 
