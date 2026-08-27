@@ -45,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/content-verify-posttool.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lint-posttool.sh\"",
             "timeout": 5
           }
         ]

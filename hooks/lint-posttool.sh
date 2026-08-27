@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# PostToolUse hook: 콘텐츠 파일 편집 직후 content-verify 자가 수행을 유도한다.
+# PostToolUse hook: 콘텐츠 파일 편집 직후 lint 자가 수행을 유도한다.
 # 수기 호출 없이도 AI 티·가독성·톤·구두점 검증이 걸리게 하는 것이 목적이다.
 #
 # 발동 조건은 둘 중 하나다.
-#   1. opt-in 마커: 프로젝트 루트(또는 상위)에 .ops-agent/content-verify.json 이 있다.
+#   1. opt-in 마커: 프로젝트 루트(또는 상위)에 .ops-agent/lint.json 이 있다.
+#      예전 이름 .ops-agent/content-verify.json 도 함께 읽는다.
 #      마커가 없으면 조용히 종료한다 (모든 프로젝트 .md 편집마다 리마인더가 뜨는 노이즈 방지).
 #   2. 발행물 경로: `_posts/` 아래 마크다운이면 마커 없이도 발동한다.
 #      경로가 곧 "발행 대상" 신호라 노이즈 위험이 다르고, 이 갈래에까지 opt-in 을 요구하면
 #      backstop 이 가장 필요한 레포일수록 마커가 없어 조용히 꺼진다.
 #
-# 마커 스키마 (.ops-agent/content-verify.json):
+# 마커 스키마 (.ops-agent/lint.json):
 #   {
 #     "include": ["**/*.md", "resume/*.html"],   // glob (생략 시 ["**/*.md"])
 #     "exclude": ["node_modules/**", "CHANGELOG.md"],
@@ -41,16 +42,21 @@ if [ -n "$post_doc" ]; then
   done
 fi
 
-# --- 마커 탐색: FP 디렉토리부터 위로 올라가며 .ops-agent/content-verify.json 을 찾는다 ---
+# --- 마커 탐색: FP 디렉토리부터 위로 올라가며 마커를 찾는다 ---
+# 이름이 lint.json 으로 바뀐 뒤에도 예전 이름을 같이 읽는다. 마커가 없으면 이 hook 은
+# 조용히 종료하므로, 이름만 바꾸면 소비 레포에서 아무 신호 없이 점검이 꺼진다.
 dir=$(dirname "$FP")
 marker=""
 root=""
 while [ "$dir" != "/" ] && [ -n "$dir" ]; do
-  if [ -f "$dir/.ops-agent/content-verify.json" ]; then
-    marker="$dir/.ops-agent/content-verify.json"
-    root="$dir"
-    break
-  fi
+  for name in lint.json content-verify.json; do
+    if [ -f "$dir/.ops-agent/$name" ]; then
+      marker="$dir/.ops-agent/$name"
+      root="$dir"
+      break
+    fi
+  done
+  [ -n "$marker" ] && break
   dir=$(dirname "$dir")
 done
 if [ -z "$marker" ]; then
@@ -143,7 +149,7 @@ esac
 # --- 발행물: 대상 레포의 하우스 규칙을 편집 시점에 띄운다 ---
 #
 # 하우스 규칙(front matter 필수 필드·요약 블록 마크업·필수 푸터·날짜 규칙)을 지키는
-# 로직은 content-publish Phase 5 에 있다. 그런데 그 스킬을 거치지 않고 파일을 직접
+# 로직은 publish Phase 5 에 있다. 그런데 그 스킬을 거치지 않고 파일을 직접
 # 만드는 경로(수기 작성·다른 스킬 경유·직접 편집)에는 아무 backstop 이 없어서,
 # 규칙 누락이 발행 직전 사람 눈에서야 잡힌다. 집행 지점에서 규칙의 소재를 알린다.
 # post_doc·post_root 판정은 마커 게이트 앞에서 이미 끝났다.
@@ -173,7 +179,7 @@ PY
 )
 fi
 
-msg="[content-verify 하네스] ${BASE} 편집됨. 수기 호출 없이 content-verify 관점으로 자가 점검하라: "
+msg="[lint 하네스] ${BASE} 편집됨. 수기 호출 없이 lint 관점으로 자가 점검하라: "
 msg="${msg}AI 티(style-rules base/ai-tells), 가독성(readability), 저자 톤(tone), 한국어 구두점(punctuation). "
 msg="${msg}구조를 먼저 본다: 문서가 세운 전제와 문서의 구성 방식이 어긋나는 쌍이 있는가(purpose PU5). "
 msg="${msg}걸리면 통째로 빠질 절이므로 문장 교정보다 이쪽이 먼저다. "
@@ -191,7 +197,7 @@ if [ -n "$post_doc" ]; then
   fi
   msg="${msg}: front matter 필수 필드 · 요약 블록 마크업(테마 고유 형식이 있으면 범용 헤딩보다 우선) · "
   msg="${msg}본문 최하단 필수 표기 · date 규칙. 이 네 가지는 범용 기본값과 다를 수 있다. "
-  msg="${msg}content-publish 를 거치지 않은 경로에서도 동일하게 적용된다. "
+  msg="${msg}publish 를 거치지 않은 경로에서도 동일하게 적용된다. "
   [ -n "$post_note" ] && msg="${msg}[date 검출] ${post_note} "
 fi
 msg="${msg}SSOT: ~/.claude/ops-agent/style-rules/. 위반은 즉시 교정, 사실/주장/코드 로직은 보존."

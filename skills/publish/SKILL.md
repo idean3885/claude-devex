@@ -1,5 +1,5 @@
 ---
-name: content-publish
+name: publish
 description: 블로그 포스팅 발행. 콘텐츠 수집 → 비평가 검토 → Jekyll 변환 → 커밋. 트리거 "블로그 발행", "블로그 변환", "Jekyll 변환", "publish".
 ---
 
@@ -11,10 +11,10 @@ description: 블로그 포스팅 발행. 콘텐츠 수집 → 비평가 검토 �
 
 | 금지 행위 | 이유 | 올바른 방법 |
 |----------|------|------------|
-| 변환 발행 모드에서 톤·내용 수정 | 입력 콘텐츠는 ops-agent:content-write에서 검증 완료 상태여야 함 | ops-agent:content-write 또는 오케스트레이터에서 선행 처리 |
+| 변환 발행 모드에서 톤·내용 수정 | 입력 콘텐츠는 ops-agent:write에서 검증 완료 상태여야 함 | ops-agent:write 또는 오케스트레이터에서 선행 처리 |
 | Phase 4 없이 Phase 5 진입 | 비평가 검토 누락 시 품질 미보장 | Phase 4 통과 후 Phase 5 진행 |
 | em dash(`—`) 사용 | 한국어 키보드에 없는 문자, AI 생성 텍스트 신호 | 콜론(`:`), 쉼표(`,`), 괄호(`()`) 등 문맥에 맞는 대체 |
-| 리더빌리티·톤 자체 검증 | ops-agent:content-verify가 단일 소스, 자체 수행 시 기준 분산 | ops-agent:content-verify(standalone) 위임 |
+| 리더빌리티·톤 자체 검증 | ops-agent:lint가 단일 소스, 자체 수행 시 기준 분산 | ops-agent:lint(standalone) 위임 |
 | 발행된 포스트의 파일명(slug) 변경 | URL이 깨져 이력서/외부 링크가 404 발생 | 제목(`title:`)만 변경, 파일명은 최초 확정 후 불변 |
 
 ## 역할
@@ -152,11 +152,11 @@ CLAUDE.md의 작성 규칙과 마크다운 줄바꿈 규칙을 따른다.
 | 메시지 반복 | 같은 주장이 3회 이상 다른 섹션에서 반복되는가? 논증(근거 추가)이 아닌 단순 반복이면 제거 |
 | 분량 적절성 | `base/length.md` LN1~LN2 적용 (총량, 채움 섹션, 밀도) |
 
-**리더빌리티 + 톤 검증: ops-agent:content-verify 위임 (GATE)**
+**리더빌리티 + 톤 검증: ops-agent:lint 위임 (GATE)**
 
-> **리더빌리티 전체 규칙 + 톤 검증은 ops-agent:content-verify(standalone)에 위임한다. ops-agent:content-publish가 직접 검증하지 않는다.**
+> **리더빌리티 전체 규칙 + 톤 검증은 ops-agent:lint(standalone)에 위임한다. ops-agent:publish가 직접 검증하지 않는다.**
 
-ops-agent:content-verify가 수행하는 검증:
+ops-agent:lint가 수행하는 검증:
 1. 리더빌리티 전체 규칙 (콘텐츠 유형별 프로필 적용)
 2. 저자 톤 (합쇼체, 주어 생략, 감정어 최소화)
 3. 검증 리포트 반환
