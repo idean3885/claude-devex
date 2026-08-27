@@ -34,7 +34,7 @@
 
 | 이론 | 문헌 | 핵심 |
 |------|------|------|
-| 번역 보편소 4축 | Baker 1993 (Text and Technology) | simplification, explicitation, normalisation, levelling-out(1996) |
+| 번역 보편소 넷 | Baker 1993 (Text and Technology) | simplification, explicitation, normalisation, levelling-out(1996) |
 | 두 법칙 | Toury 1995 (Descriptive Translation Studies) | growing standardisation, law of interference (번역투 90%+ 가 간섭으로 환원) |
 | S/T-universals 구분 | Chesterman 2004 | 원천→목표(S) vs 목표언어 내(T) |
 | post-editese | Toral 2019 (MT Summit XVII, arXiv:1907.00900) | PE = "악화된 translationese" (단순화·정규화·간섭 강화). 5개 언어쌍, **한국어 미포함** |
@@ -75,7 +75,7 @@
 
 ### CV1. post-editese·합성 지수 미채택 (U: 업스트림 C3)
 
-Toral 2019 의 post-editese 3축(simplification·normalisation·interference)과 이를 가중 합한 합성 지수는 **speculative** 다.
+Toral 2019 의 post-editese 지표 셋(simplification·normalisation·interference)과 이를 가중 합한 합성 지수는 **speculative** 다.
 검증 언어쌍(en→de, de→en, es→de, en→fr, zh→en)에 **한국어가 없고**, baseline(비번역 한국어 대비) 없이는 정량 판정이 불가하다.
 → 우리는 이 지수들을 metrics 로 **채택하지 않는다**. 정성 anchor 로만 참조한다.
 
