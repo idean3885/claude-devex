@@ -2,7 +2,7 @@
 
 > **Base**: `base/readability.md` + `base/tone.md` + `base/punctuation.md` + `base/ai-tells.md`
 > **Adds**: 개발 사전·노하우 특화 규칙 (저자 실무 판단 우선)
-> **Profile**: 적용 대상·base 대비 적용 강도·합격선은 [profiles.md](profiles.md) 가 정본이다.
+> **Profile**: 적용 대상·base 대비 적용 강도·분량 기준값·합격선은 [profiles.md](profiles.md) 가 정본이다.
 
 개발 사전·노하우는 개념을 간결하게 정리하되, AI가 생성 가능한 수준의 정의 나열은 가치가 없다.
 **저자 실무 판단**이 들어간 비교·해석이 핵심이다.

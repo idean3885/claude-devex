@@ -2,7 +2,7 @@
 
 > **Base**: `base/readability.md` + `base/tone.md` + `base/punctuation.md` + `base/ai-tells.md`
 > **Adds**: 시점의 층 선택 + 층별 정지 조건 + 그림 자립 조건 + 그림 검증 + 그림 안 용어
-> **Profile**: 적용 대상·base 대비 적용 강도·합격선은 [profiles.md](profiles.md) 가 정본이다.
+> **Profile**: 적용 대상·base 대비 적용 강도·분량 기준값·합격선은 [profiles.md](profiles.md) 가 정본이다.
 
 아키텍처 문서에서 어긋나는 지점은 내용이 아니라 **시점** 이다. 무엇을 그릴지는 알아도 어느 높이에서 그릴지, 어디서 멈출지가 정해져 있지 않으면 매번 즉석에서 판단하고 두 방향으로 어긋난다. 한쪽은 그림 하나에 외부 의존과 내부 구조를 섞어 아무 질문에도 답하지 못한다. 다른 쪽은 클래스까지 내려가 코드가 바뀔 때마다 낡는다.
 

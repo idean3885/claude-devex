@@ -94,8 +94,8 @@ flowchart LR
 
 `flow` 하나가 git 상태를 감지해 현재 단계를 실행합니다. 플랜·커밋·머지 세 곳에서 사용자 승인을 받고 진행합니다. 커밋 타입이 체인지로그 분류와 버전 증분을 결정하며(`feat`→`Added`/MINOR, `fix`→`Fixed`/PATCH, `!`·`BREAKING CHANGE:`→MAJOR) 표기는 레포·org 선언이 기본값을 대체합니다.
 
-| 항목 | 정본 |
-|------|------|
+| 찾는 것 | 정본 |
+|---------|------|
 | 커밋 단계 규칙 | [skills/flow/guides/commit.md](../skills/flow/guides/commit.md) |
 | 선언 위치·해석 순서 | [conventions-slot.md](conventions-slot.md) |
 | 이 결정의 배경과 기각한 대안 | [adr/0002-convention-scope-and-ownership.md](adr/0002-convention-scope-and-ownership.md) |
@@ -115,6 +115,7 @@ flowchart LR
 | `scripts/selftest-action-gate.mjs` | 액션 게이트 판정·개방 안내 자체 점검 (22건) | [action-gate.md](action-gate.md) |
 | `scripts/resolve-manifest.mjs` | 소유자 식별과 org·repo 매니페스트 발견 | [conventions-slot.md](conventions-slot.md) |
 | `config/style-rules/metrics/tells_count.py` | AI 티 지표 측정 | [지표 정의](../config/style-rules/metrics/metrics-spec.md) |
+| `config/style-rules/metrics/length_stats.py` | 유형별 분량 기준값(행) 측정 | [분량 SSOT](../config/style-rules/base/length.md) |
 
 프로파일을 받는 스크립트는 대상 목록·판정 기준·임계값을 갖지 않고 소비 프로젝트가 공급합니다.
 

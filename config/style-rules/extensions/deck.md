@@ -2,7 +2,7 @@
 
 > **Base**: `base/readability.md` + `base/tone.md` + `base/punctuation.md` + `base/ai-tells.md`
 > **Adds**: 비교·판단을 전달하는 장표 특화 규칙 (장 단위 결론 + 결정으로 닫기)
-> **Profile**: 적용 대상·base 대비 적용 강도·합격선은 [profiles.md](profiles.md) 가 정본이다.
+> **Profile**: 적용 대상·base 대비 적용 강도·분량 기준값·합격선은 [profiles.md](profiles.md) 가 정본이다.
 
 장표는 읽는 문서가 아니라 훑는 문서다. 독자는 표를 먼저 보고 문장을 나중에 본다. 그래서 표를 놓는 것까지가 작성이라고 착각하기 쉽고, 그 상태로 끝나면 근거만 있고 주장이 없는 산출물이 된다.
 
