@@ -94,6 +94,14 @@ const GATE_DRYRUN = process.env.OPS_AGENT_ACTION_GATE_DRYRUN === '1' || process.
 
 // 운영 클러스터 쓰기 가드 — mutating verb / 값 취하는 플래그 세트.
 // (가드 호출이 최상위 await 컨텍스트라 const 초기화가 먼저 끝나도록 상단에 선언 — TDZ 회피)
+// 동거 검사(#386)용 패턴. 게이트 호출보다 먼저 초기화되어야 하므로 여기 둔다.
+// 갈래 앞에 와도 판정 출력이 없는 명령: 주석·디렉토리 이동·환경 설정.
+const COHABIT_BENIGN = /^(?:#|cd\b|export\b|set\b|umask\b|source\b|\.\s|true$|:$)/;
+// 예외: 판정을 **종료 코드로** 돌려주는 검사 스크립트. `&&` 로 물리면 검출 시 다음 명령이
+// 실행되지 않으므로, 사람이 출력을 읽지 않아도 결과가 집행된다. 문자열로만 알리는 스니펫과
+// 다른 것은 이 한 가지다.
+const COHABIT_GATE_CHECK = /(?:^|[\/\s])pre-merge-check\.sh(?:\s|$)/;
+
 const KUBECTL_WRITE = new Set([
   'apply', 'patch', 'replace', 'delete', 'edit', 'scale', 'annotate', 'label',
   'set', 'cordon', 'drain', 'uncordon', 'taint', 'rollout', 'create', 'expose',
@@ -264,6 +272,38 @@ if (!DISABLE) {
               },
             }));
             process.exit(0);
+          }
+        }
+
+        // 동거 검사: 갈래가 열려 있어도, 앞선 명령의 출력을 읽어야 하는 블록이면 막는다 (#386).
+        // 열린 창에서만 의미가 있다. 닫혀 있으면 위 갈래 차단이 먼저 걸린다.
+        if (!gateResult.blocked && (gateResult.detected || []).length) {
+          const co = detectGateCohabitation(command, hookInput.cwd);
+          if (co) {
+            const header = GATE_DRYRUN
+              ? '[ops-agent 액션 게이트 · 드라이런]'
+              : '[ops-agent 액션 게이트 · 차단]';
+            const msg = `${header} 되돌리기 어려운 행위(${co.op.tool} ${co.op.verb})가 다른 명령과 한 블록에 있습니다.\n` +
+              `앞선 명령:\n${co.preceding.map(s => `  - ${s.length > 120 ? s.slice(0, 120) + '…' : s}`).join('\n')}\n\n` +
+              `앞선 명령의 출력을 읽기 전에 이 행위가 실행됩니다. 게이트가 판정을 내려도 같은 블록의\n` +
+              `다음 줄이 그대로 실행되면 판정이 아무것도 막지 못합니다 (실측: 버전 대조가 「멈춤」을\n` +
+              `출력한 블록에서 머지가 실행되어 기본 브랜치의 버전이 뒤로 밀렸습니다).\n\n` +
+              `해결: 앞선 명령을 먼저 단독 실행해 출력을 읽고, 그 다음 호출에서 이 행위만 실행하세요.\n` +
+              `예외: 판정을 종료 코드로 돌려주는 검사(scripts/pre-merge-check.sh)는 \`&&\` 로 물려도 됩니다.\n` +
+              `      검출 시 종료 코드 1 이라 다음 명령이 실행되지 않습니다.\n` +
+              `디렉토리 이동(cd)·환경 설정(export·set)·주석은 앞에 와도 통과합니다.`;
+            if (GATE_DRYRUN) {
+              process.stderr.write(msg + '\n');
+            } else {
+              process.stdout.write(JSON.stringify({
+                hookSpecificOutput: {
+                  hookEventName: 'PreToolUse',
+                  permissionDecision: 'deny',
+                  permissionDecisionReason: msg,
+                },
+              }));
+              process.exit(0);
+            }
           }
         }
       }
@@ -726,10 +766,48 @@ function runWhatAbstractionGuard(command) {
 // 그래서 갈래 키를 category 보다 좁게 둔다 (scope).
 function runActionGate(command, sessionId, hookCwd) {
   const allowed = allowedScopes(sessionId);
-  if (allowed.has('all')) return { blocked: false, ops: [] };
+  // `all` 이 열려 있어도 탐지는 한다. 동거 검사(#386)가 열린 창에서만 발동하기 때문이다.
   const ops = detectGatedActions(command, hookCwd);
-  const outside = ops.filter(o => !allowed.has(o.scope || 'unscoped'));
-  return { blocked: outside.length > 0, ops: outside, allowed: [...allowed] };
+  const outside = allowed.has('all') ? [] : ops.filter(o => !allowed.has(o.scope || 'unscoped'));
+  return { blocked: outside.length > 0, ops: outside, detected: ops, allowed: [...allowed] };
+}
+
+// 게이트 대상 행위 앞에 **출력을 읽어야 하는 명령**이 같은 블록에 있으면 차단한다.
+//
+// 게이트가 판정을 정확히 내려도 같은 명령 블록의 다음 줄이 그대로 실행되면 판정이 아무것도
+// 막지 못한다. 실제로 GATE 6 이 「멈춤」 두 줄을 출력한 블록에서 `gh pr merge` 가 실행되어
+// main 의 버전이 뒤로 밀렸다 (#386). 「분리해서 실행하라」를 지시로 두는 것과 기계가 거르는
+// 것은 강도가 다르다. 잊어도 걸리는 쪽을 택한다.
+//
+// 앞 세그먼트만 본다. 뒤에 오는 정리 명령(브랜치 삭제 등)은 이미 실행된 행위의 결과에
+// 딸린 것이라 판정 대상이 아니다.
+function detectGateCohabitation(command, hookCwd) {
+  const segs = gateSegments(command);
+  if (segs.length < 2) return null;
+  const dir = extractCwdFromCommand(command, hookCwd);
+  const runGit = args => {
+    try {
+      return execSync(`git ${args}`, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: budgeted(800) });
+    } catch {
+      return null;
+    }
+  };
+  for (let i = 0; i < segs.length; i++) {
+    const ops = [
+      ...detectClusterMutations(segs[i]),
+      ...detectRepoActions(segs[i]),
+      ...detectGitRiskActions([segs[i]], { runGit }),
+    ];
+    if (!ops.length) continue;
+    const preceding = segs.slice(0, i)
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .filter(s => !COHABIT_BENIGN.test(s) && !COHABIT_GATE_CHECK.test(s));
+    if (preceding.length) {
+      return { op: ops[0], preceding };
+    }
+  }
+  return null;
 }
 
 // 마커가 담은 허용 갈래 집합. 비어 있으면 아무것도 열려 있지 않다.

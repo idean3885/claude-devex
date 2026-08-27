@@ -10,6 +10,12 @@
 
 <!-- bump-version.sh 삽입 지점 -->
 
+## [8.7.0] - 2026-08-27
+
+### Added
+- feat: 게이트 대상 행위를 다른 명령과 한 블록에 두면 갈래가 열려 있어도 차단. 머지 전 버전 대조를 종료 코드로 판정하는 scripts/pre-merge-check.sh 로 분리 (#386)
+- feat: 액션 게이트 판정 자체 점검 `scripts/selftest-action-gate.mjs` 추가 (#386)
+
 ## [8.6.2] - 2026-08-27
 
 ### Changed

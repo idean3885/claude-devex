@@ -35,6 +35,8 @@ git diff --stat origin/<타겟>...HEAD
 git diff origin/<타겟>...HEAD
 ```
 
+**출력을 내는 것과 읽는 것은 다른 단계다.** 이 두 명령을 본문 작성·제출 명령과 한 블록에 넣으면 출력이 컨텍스트에 들어오기 전에 다음 명령이 실행된다. 판정하는 명령은 단독으로 돌리고, 결과를 본 뒤 다음 호출로 넘어간다.
+
 | 항목 | 확인 |
 |------|------|
 | 의존성 방향 | 안쪽 계층이 바깥 계층을 참조하게 된 자리가 있는가 (계층 규약을 둔 레포) |
@@ -57,22 +59,25 @@ git diff origin/<타겟>...HEAD
 **git 충돌에 기대지 않는다.** 버전 항목을 파일 앞쪽 고정 지점에 삽입하는 도구를 쓰면, 다른 작업이 같은 값을 고쳐도 삽입 위치가 달라 자동 병합된다.
 
 ```bash
-BRANCH=<브랜치>; TARGET=<타겟>
-git fetch -q origin
-bv=$(git show "origin/$BRANCH:VERSION" 2>/dev/null | tr -d ' \n')
-tv=$(git show "origin/$TARGET:VERSION" 2>/dev/null | tr -d ' \n')
-if [ -z "$bv" ] || [ -z "$tv" ]; then
-  echo "VERSION 파일 없음 — 이 검사 건너뜀"
-elif [ "$bv" = "$tv" ] || [ "$(printf '%s\n%s\n' "$bv" "$tv" | sort -V | tail -1)" != "$bv" ]; then
-  echo "멈춤: 브랜치 $bv 가 타겟 $tv 보다 크지 않다"
-else
-  echo "통과: $tv → $bv"
-fi
-dup=$(git show "origin/$BRANCH:CHANGELOG.md" 2>/dev/null | grep -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' | sort | uniq -d)
-if [ -n "$dup" ]; then echo "멈춤: CHANGELOG 버전 헤더 중복 — $dup"; fi
+bash ~/.claude/ops-agent/current/scripts/pre-merge-check.sh <브랜치> <타겟>
 ```
 
-멈추면 브랜치를 타겟 위로 다시 올려 범프하고 **푸시한 뒤** 다시 대조한다. 버전 파일 이름이 다른 레포는 그 레포의 파일로 바꿔 같은 대조를 한다.
+검출하면 **종료 코드 1** 이다. 그래서 머지 명령에 `&&` 로 물려도 된다.
+
+```bash
+bash ~/.claude/ops-agent/current/scripts/pre-merge-check.sh <브랜치> <타겟> && gh pr merge <번호> --merge
+```
+
+**판정을 출력만 하는 형태로 두지 않는다.** 「멈춤」을 출력해도 같은 블록의 다음 줄은 그대로 실행된다. 실측에서 이 검사가 멈춤 두 줄을 출력한 블록에서 머지가 실행되어 기본 브랜치의 버전이 뒤로 밀렸다. 검사를 종료 코드로 만든 이유이고, 액션 게이트가 게이트 대상 행위와 다른 명령의 동거를 차단하는 이유다 ([docs/action-gate.md](../../../docs/action-gate.md) 의 「다른 명령과 한 블록에 두지 않는다」).
+
+| 인자·환경변수 | 값 |
+|---------------|-----|
+| 첫 인자 | 브랜치 (생략 시 현재 브랜치) |
+| 둘째 인자 | 타겟 (생략 시 `origin/HEAD`, 없으면 `main`) |
+| `VERSION_FILE` | 버전 파일 이름 (기본 `VERSION`). 그 이름의 파일이 없으면 버전 비교를 건너뛴다 |
+| `CHANGELOG_FILE` | 체인지로그 파일 이름 (기본 `CHANGELOG.md`) |
+
+멈추면 브랜치를 타겟 위로 다시 올려 범프하고 **푸시한 뒤** 다시 대조한다. 원격에 브랜치가 없으면 「파일 없음」이 아니라 멈춤이다. 검사하지 못한 상태를 통과와 같은 모양으로 두지 않는다.
 
 ### 쌓인 PR
 
