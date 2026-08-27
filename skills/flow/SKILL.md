@@ -82,8 +82,8 @@ git rev-parse --git-dir          # 현재 .git 경로
 
 provider의 이슈 조회 API로 현재 이슈 상태를 확인한다.
 
-| 상태 | 실행 |
-|------|------|
+| 이슈 상태 | 실행 |
+|-----------|------|
 | registered (할 일) | 이슈 시작 단계 → `guides/issue.md` (start) |
 | working (진행 중) + 브랜치 없음 | 브랜치 생성 필요 → `guides/issue.md` (start) |
 | working (진행 중) + 브랜치 있음 | Git 상태 감지로 전환 |
