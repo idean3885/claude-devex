@@ -2,7 +2,7 @@
 
 > **Base**: `base/readability.md` + `base/tone.md` + `base/punctuation.md` + `base/ai-tells.md`
 > **Adds**: 동료리뷰 작성 특화 규칙 (협업 평가 톤)
-> **Profile**: 적용 대상·base 대비 적용 강도·합격선은 [profiles.md](profiles.md) 가 정본이다.
+> **Profile**: 적용 대상·base 대비 적용 강도·분량 기준값·합격선은 [profiles.md](profiles.md) 가 정본이다.
 
 연계 스킬:
 - 사내 어댑터의 `peer-review` (조직장 참고용 협업 평가)

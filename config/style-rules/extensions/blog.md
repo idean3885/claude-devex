@@ -2,7 +2,7 @@
 
 > **Base**: `base/readability.md` + `base/tone.md` + `base/punctuation.md` + `base/ai-tells.md`
 > **Adds**: 블로그 포스팅 특화 규칙 (포트폴리오 어필, PAAR 구조, 카테고리·태그 메타)
-> **Profile**: 적용 대상·base 대비 적용 강도·합격선은 [profiles.md](profiles.md) 가 정본이다.
+> **Profile**: 적용 대상·base 대비 적용 강도·분량 기준값·합격선은 [profiles.md](profiles.md) 가 정본이다.
 
 블로그 포스팅은 저자의 의사결정·실무 경험을 외부 독자(면접관 포함)에게 전달하는 매체다.
 사내 위키 원본을 발행하는 흐름에서는 `wiki.md` 익스텐션을 거친 뒤 블로그용으로 가공한다.

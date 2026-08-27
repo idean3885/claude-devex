@@ -2,7 +2,7 @@
 
 > **Base**: `base/readability.md` + `base/tone.md` + `base/punctuation.md` + `base/ai-tells.md`
 > **Adds**: 사내 위키 포스팅 특화 규칙 (시리즈 인덱스, 상세도, 사내 맥락 보존)
-> **Profile**: 적용 대상·base 대비 적용 강도·합격선은 [profiles.md](profiles.md) 가 정본이다.
+> **Profile**: 적용 대상·base 대비 적용 강도·분량 기준값·합격선은 [profiles.md](profiles.md) 가 정본이다.
 
 사내 위키는 블로그 발행의 **원본 저장소**다.
 "내가 더 잘 이해하고 업무를 잘하기 위한 저장소" 라는 1차 목적을 가진다.

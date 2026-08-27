@@ -2,7 +2,7 @@
 
 > **Base**: `base/readability.md` + `base/tone.md` + `base/punctuation.md` + `base/ai-tells.md`
 > **Adds**: PoC 문서 특화 규칙 (결론 선행 + 재현 가능성 + 성공기준 사전정의 + 성공·실패 동시기록 + 확증편향 방지 + 후보 비교)
-> **Profile**: 적용 대상·base 대비 적용 강도·합격선은 [profiles.md](profiles.md) 가 정본이다.
+> **Profile**: 적용 대상·base 대비 적용 강도·분량 기준값·합격선은 [profiles.md](profiles.md) 가 정본이다.
 
 PoC 문서는 기술 검증의 결과를 "된다·안 된다"로 명확히 결론짓고, 동일 환경에서 재현 가능한 절차를 남기는 것이 목적이다.
 

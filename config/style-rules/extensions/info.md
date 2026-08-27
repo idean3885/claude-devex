@@ -2,7 +2,7 @@
 
 > **Base**: `base/readability.md` + `base/tone.md` + `base/punctuation.md` + `base/ai-tells.md`
 > **Adds**: 정보성 문서 특화 규칙 (따라하기 용이성, 섹션 독립성)
-> **Profile**: 적용 대상·base 대비 적용 강도·합격선은 [profiles.md](profiles.md) 가 정본이다.
+> **Profile**: 적용 대상·base 대비 적용 강도·분량 기준값·합격선은 [profiles.md](profiles.md) 가 정본이다.
 
 정보성 문서는 독자가 절차를 따라하거나 개념을 참조하기 위한 매체다.
 독자가 처음부터 읽지 않고 **원하는 섹션부터 점프**할 수 있어야 한다.
