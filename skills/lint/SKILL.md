@@ -1,14 +1,14 @@
 ---
-name: content-verify
-description: 글 교정. 규칙과 대조해 위반 위치를 찾는 단계. 품질 3요소(사실·구조·독립가치) + 가독성·톤·구두점·AI 티 체크리스트. 사후(standalone)와 사전(inline) 이중 모드. 트리거 "교정", "검증", "verify", "가독성 검사", "AI 티 검사", "윤문".
+name: lint
+description: 글 교정. 규칙과 대조해 위반 위치를 찾는 단계. 품질 3요소(사실·구조·독립가치) + 가독성·톤·구두점·AI 티 체크리스트. 사후(standalone)와 사전(inline) 이중 모드. 트리거 "교정", "검증", "verify", "가독성 검사", "AI 티 검사", "lint".
 ---
 
-# 콘텐츠 검증
+# 교정
 
-마크다운 콘텐츠의 품질과 가독성을 검증하여 게시 가능 레벨을 확보합니다.
+마크다운 문서를 규칙과 대조해 위반 위치를 찾습니다.
 
 > **이 스킬은 리더빌리티 + 저자 톤 + 한국어 구두점의 단일 검증 소스입니다.**
-> ops-agent:content-write(Phase 3, inline)와 ops-agent:content-publish(Phase 4, standalone)는 이 스킬에 위임합니다.
+> ops-agent:write(Phase 3, inline)와 ops-agent:publish(Phase 4, standalone)는 이 스킬에 위임합니다.
 > 리더빌리티·톤 검증 기준을 변경할 때는 이 스킬만 수정합니다.
 
 > **가독성 규칙 원천**: [config/style-rules/base/readability.md](../../config/style-rules/base/readability.md) (ops-agent SSOT, 미러: `~/.claude/ops-agent/style-rules/base/`)
@@ -20,8 +20,8 @@ description: 글 교정. 규칙과 대조해 위반 위치를 찾는 단계. 품
 
 | 모드 | 호출 방식 | 용도 | 출력 |
 |------|----------|------|------|
-| **사후 (standalone)** | `/ops-agent:content-verify` 직접 호출 | 기존 글 다듬기, 소급 검증 | 리포트 + 교정 제안 |
-| **사전 (inline)** | `ops-agent:content-write` Phase 3에서 자동 적용 | 작성 중 즉시 반영 | 규칙 위반 즉시 교정 |
+| **사후 (standalone)** | `/ops-agent:lint` 직접 호출 | 기존 글 다듬기, 소급 검증 | 리포트 + 교정 제안 |
+| **사전 (inline)** | `ops-agent:write` Phase 3에서 자동 적용 | 작성 중 즉시 반영 | 규칙 위반 즉시 교정 |
 
 ### standalone 모드
 
@@ -30,7 +30,7 @@ Phase 1~4 전체를 수행합니다.
 
 ### inline 모드
 
-`ops-agent:content-write`가 작성 Phase에서 호출합니다.
+`ops-agent:write`가 작성 Phase에서 호출합니다.
 가독성 + 비평가 기준을 작성 중 즉시 적용하여 별도 verify 패스를 제거합니다.
 리포트 대신 **교정된 본문**을 반환합니다.
 
@@ -219,7 +219,7 @@ AI 티 검증 ([ai-tells.md](../../config/style-rules/base/ai-tells.md) A~K):
 ### Phase 3: 결과 리포트
 
 ```markdown
-## 콘텐츠 검증 결과
+## 교정 결과
 
 - 대상: {파일명 또는 제목}
 - 유형: {PoC | 정보성 | 시리즈 어필}
@@ -268,7 +268,7 @@ AI 티 검증 ([ai-tells.md](../../config/style-rules/base/ai-tells.md) A~K):
 2. 교정 전후 diff를 보여주고 확인 후 적용
 3. 로컬 파일: 직접 수정
 
-**과윤문 게이트 (4대 철칙 #4 실측)**: 교정 후 `python3 config/style-rules/metrics/tells_count.py --before <원문> --after <교정본>` 으로 변경률을 측정한다. `<원문>`·`<교정본>` 은 텍스트를 그대로 넘겨도 되고 파일 경로여도 된다(경로가 실재하면 파일, 아니면 리터럴로 취급). `warn`(30% 초과)이면 사용자에게 경고, `abort`(50% 초과)이면 교정을 중단하고 원문 의미 훼손 여부를 사람이 검토한다. inline 모드(content-write Phase 3)는 이 스크립트 게이트를 호출하지 않는다(핫패스 비용 회피, 기존 체크리스트 자가 검증만).
+**과윤문 게이트 (4대 철칙 #4 실측)**: 교정 후 `python3 config/style-rules/metrics/tells_count.py --before <원문> --after <교정본>` 으로 변경률을 측정한다. `<원문>`·`<교정본>` 은 텍스트를 그대로 넘겨도 되고 파일 경로여도 된다(경로가 실재하면 파일, 아니면 리터럴로 취급). `warn`(30% 초과)이면 사용자에게 경고, `abort`(50% 초과)이면 교정을 중단하고 원문 의미 훼손 여부를 사람이 검토한다. inline 모드(write Phase 3)는 이 스크립트 게이트를 호출하지 않는다(핫패스 비용 회피, 기존 체크리스트 자가 검증만).
 
 ---
 

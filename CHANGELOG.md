@@ -10,6 +10,11 @@
 
 <!-- bump-version.sh 삽입 지점 -->
 
+## [8.0.0] - 2026-08-27
+
+### Changed
+- **BREAKING** refactor!: 스킬 이름에서 content- 접두를 걷는다 — content-write→write, content-verify→lint, content-publish→publish. BREAKING: ops-agent:content-* 호출 이름 제거. hook 은 hooks/lint-posttool.sh 로 개명하고 마커는 .ops-agent/lint.json 우선 + 예전 이름 .ops-agent/content-verify.json 병행 읽기. 이력 문서의 옛 표기는 유지. ADR 0006 신설 (#365)
+
 ## [7.30.1] - 2026-08-26
 
 ### Changed

@@ -56,7 +56,7 @@ Good:
 
 - 시제: 평가 기간 성과는 과거형 (`~했습니다`)
 - 주어 생략 원칙 유지 (`base/tone.md T13` 의 1인칭 회상)
-- "저는" 금지 (`ops-agent:content-write` 의 hard constraint 와 동일)
+- "저는" 금지 (`ops-agent:write` 의 hard constraint 와 동일)
 
 ---
 

@@ -43,9 +43,9 @@ Issue → Spec → Implement → Commit → PR
 | `/flow` | 이슈 플로우 단일 진입점 (issue → spec → 구현 → commit → pr) | "flow", "플로우", 자연어 수정 요청 |
 | `/org-flow` | 멀티레포 오케스트레이션 | "org-flow", "멀티레포" |
 | `/setup` | provider 등록, 상태 확인, overlay 설정 | "setup", "설정" |
-| `/content-write` | 콘텐츠 작성 엔진 | "콘텐츠 작성", "글 작성" |
-| `/content-verify` | 마크다운 검증 (AI 티·가독성·톤·구두점) | "검증", "가독성 검사" |
-| `/content-publish` | 블로그 발행 (Jekyll 변환) | "블로그 발행", "publish" |
+| `/write` | 글 작성·수정 (계획 → 초고 → 퇴고) | "글 작성", "계획", "초고", "퇴고" |
+| `/lint` | 교정 (AI 티·가독성·톤·구두점) | "교정", "검증", "가독성 검사" |
+| `/publish` | 블로그 발행 (Jekyll 변환) | "블로그 발행", "publish" |
 | `/cross-verify` | 교차 검증 (의사결정·설계·문서·구현 4축) | "교차 검증", "크로스 체크" |
 | `/advisor` | 방향 프로파일 기준 비판·조언 | "어드바이저", "방향 검토" |
 
