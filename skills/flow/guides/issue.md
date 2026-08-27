@@ -176,8 +176,8 @@ provider 파일에 인증 방식, API endpoint, request body 형식, 필드 보�
 
 이슈 생애주기의 구체적 동작은 provider에 위임한다:
 
-| 항목 | provider에서 참조 |
-|------|-------------------|
+| 위임 동작 | provider 참조 위치 |
+|-----------|---------------------|
 | 인증 헤더 | `Authentication` 섹션 |
 | 이슈 생성 API | `Issue Lifecycle > create` |
 | 라벨/태그 매핑 | `Issue Lifecycle > create > 라벨 매핑` |
