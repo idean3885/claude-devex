@@ -5,7 +5,7 @@
 - **정의**: 이 문서. 각 지표가 무엇을 재고, 우리 `base/ai-tells.md` 패턴과 어떻게 연계되는지 규정한다.
 - **실행**: 같은 디렉토리의 `tells_count.py`. 슬림 카운터로, baseline 코퍼스에 의존하지 않는다.
 
-번역학 3축(simplification·normalisation·interference)을 지표 축으로 인코딩한다. 출처는 Baker(1993, normalisation), Toury(1995, law of interference), Toral(2019, post-editese simplification)이다.
+번역 보편소 셋(단순화 simplification·규범화 normalisation·간섭 interference)을 지표 계열로 인코딩한다. 출처는 Baker(1993, normalisation), Toury(1995, law of interference), Toral(2019, post-editese simplification)이다.
 
 > **출처**: 지표 골격과 14개 함수 정의는 [`epoko77-ai/im-not-ai`](https://github.com/epoko77-ai/im-not-ai) 의 `metrics_v2.py`(MIT)에서 차용했다. 본 문서는 그 정의를 우리 SSOT 맥락(ai-tells A~K 패턴 연계, 철칙 #4 변경률 게이트)으로 재기술한 파생물이며 동일 MIT 로 배포된다.
 
@@ -15,7 +15,7 @@
 
 ## 14 지표 표
 
-| # | 축 | 지표명 | 정의(한 줄) | ai-tells 연계 | tells_count.py 구현 | speculative |
+| # | 보편소 계열 | 지표명 | 정의(한 줄) | ai-tells 연계 | tells_count.py 구현 | speculative |
 |---|----|--------|-------------|---------------|---------------------|-------------|
 | 1 | simplification | `lexical_diversity_ttr` | 어절 TTR(고유 어절 ÷ 전체 어절). 낮을수록 반복적 | (직접 연계 없음, 관찰만) | 정의만 | true |
 | 2 | simplification | `lexical_density` | 내용어 비율. 한자 명사화 접미사·서술 종결 기준 프록시. 낮을수록 기능어 과다 | F-3, F-4 | 정의만 | true |
@@ -34,7 +34,7 @@
 
 ### 열 설명
 
-- **축**: 번역학 3축. simplification(단순화·반복), normalisation(정규화·표준 종결 집중), interference(원문 통사 간섭). 괄호 안 `T*`는 im-not-ai 보고서의 번역투 유형 번호.
+- **계열**: 번역 보편소 셋. simplification(단순화·반복), normalisation(정규화·표준 종결 집중), interference(원문 통사 간섭). 괄호 안 `T*`는 im-not-ai 보고서의 번역투 유형 번호.
 - **ai-tells 연계**: 우리 `base/ai-tells.md` 카테고리 번호. `deul_overuse_rate`는 아직 전용 카테고리를 두지 않고 관찰만 한다.
 - **tells_count.py 구현**: `구현`은 `tells_count.py` 에 실제 함수가 있는 지표(8·9·12·13번 + 부가 지표 `change_rate`·`antithesis_count`·`em_dash_count`·`physical_verb_count`·`absolutist_count`). 나머지는 정의만 두고 구현을 유보한다.
 - **speculative**: `true`는 우리가 아직 채택하지 않은 지표. baseline 코퍼스가 있어야 값을 해석할 수 있는 분포형 비율(simplification 3종 + `normalisation_score`)이 해당한다. `false`는 표층 매칭 절대 카운트로, baseline 없이도 존재만으로 판정 가능한 지표다.
@@ -78,7 +78,7 @@
 - 오탐 회피는 어미가 담당한다. `있다`(쌍시옷)·`빠르다`·`넘다`·`잇몸`·`잇따라` 는 어간이나 어미가 달라 빠진다.
 - 제외: `가르다`·`뽑다` 는 대체어가 1:1 이라 `forbidden-words.json` 이 직접 통지한다. `쪼개다`·`때려박다` 계열도 이미 등록 패턴이 잡는다.
 - 용도: 한 문서에서 값이 높으면 추상 관계를 손동작 은유로 서술하고 있을 가능성이 커진다. 그때 개별 문장을 본다.
-- **0 은 통과가 아니다.** 등록 목록 밖을 보지 못했다는 뜻이다. 이 값이 0 이어도 T8 판정 3조건으로 다시 본다. 실측에서 물리 조작 동사 12건 중 등록 경로에 걸린 것은 3건이었고 나머지 9건은 원칙 판독으로만 잡혔다. 앵커가 0 을 보고하는 동안 검증자가 그 항목을 통과로 읽으면, 등록됐는데 안 잡히는 경우보다 조용히 지나간다.
+- **0 은 통과가 아니다.** 등록 목록 밖을 보지 못했다는 뜻이다. 이 값이 0 이어도 T8 판정 3조건으로 다시 본다. 실측에서 물리 조작 동사 12건 중 등록 경로에 걸린 것은 3건이었고 나머지 9건은 원칙 판독으로만 잡혔다. 앵커가 0 을 보고하는 동안 검증자가 그 항목을 통과로 읽으면, 등록됐는데 안 잡히는 경우보다 조용히 통과한다.
 - 도입 배경: 등록 패턴이 어조가 튀는 동사에 몰려 있어, 같은 물리 어근이면서 어조가 평범한 동사가 검출 없이 통과했다. 산출물 한 편에서 21회가 잡히지 않았다.
 
 ### absolutist_count (D-17 진단 앵커)
