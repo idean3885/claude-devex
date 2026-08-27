@@ -38,7 +38,33 @@ const CASES = [
   ['파이프 뒤 머지', 'echo y | gh pr merge 386 --merge', 'deny'],
 ];
 
+// 개방 안내가 「잃는 갈래」만 알리는지. prev → new 로 다시 열 때 사라지는 갈래가 없으면
+// 알릴 것이 없다. 알리면 사용자가 그 문구를 실행해 중복된 목록을 마커에 넣는다 (#388).
+// 마커를 만들지 않도록 함수만 불러 쓴다(OPS_AGENT_GATE_LIB=1).
+const SCOPE_CASES = [
+  ['새 목록이 이전을 포함', 'repo-merge', 'repo-merge,worktree-destructive,git-force', ''],
+  ['같은 목록', 'repo-merge', 'repo-merge', ''],
+  ['이전이 없음', '', 'repo-merge', ''],
+  ['새 목록이 전체 개방', 'repo-merge,git-force', 'all', ''],
+  ['갈래 하나가 닫힘', 'repo-merge,git-force', 'repo-merge', 'on repo-merge,git-force'],
+  ['갈래가 전부 교체', 'repo-merge', 'cluster-write', 'on cluster-write,repo-merge'],
+  ['전체 개방이 닫힘', 'all', 'repo-merge', 'on all'],
+  ['이전 목록에 공백', 'repo-merge, git-force', 'repo-merge', 'on repo-merge,git-force'],
+  ['이름에 all 을 담은 갈래', 'install-write', 'repo-merge', 'on repo-merge,install-write'],
+];
+
 let failed = 0;
+for (const [name, prev, next, expect] of SCOPE_CASES) {
+  const res = spawnSync('bash', ['-c',
+    'set -euo pipefail; OPS_AGENT_GATE_LIB=1 . "$1"; warn_lost_scopes "$2" "$3"',
+    'selftest', join(here, 'action-gate-allow.sh'), prev, next,
+  ], { encoding: 'utf8' });
+  const warn = (res.stderr || '').trim();
+  const ok = expect ? warn.includes(expect) : warn === '';
+  if (!ok) failed++;
+  console.log(`${ok ? '  OK' : '  XX'}  개방 안내: ${name} — ${warn || '알림 없음'}`);
+}
+
 for (const [name, command, want] of CASES) {
   const res = spawnSync('node', [hook], {
     input: JSON.stringify({
@@ -76,5 +102,5 @@ for (const [name, command, want] of CASES) {
   console.log(`${ok ? '  OK' : '  XX'}  ${name} — want ${want}, got ${got}${detail ? ` · ${detail}` : ''}`);
 }
 
-console.log(failed ? `\n실패 ${failed}건` : `\n${CASES.length}건 전부 통과`);
+console.log(failed ? `\n실패 ${failed}건` : `\n${CASES.length + SCOPE_CASES.length}건 전부 통과`);
 process.exit(failed ? 1 : 0);
