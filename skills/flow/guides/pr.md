@@ -44,7 +44,7 @@ else
   echo "통과: $tv → $bv"
 fi
 dup=$(git show "origin/$BRANCH:CHANGELOG.md" 2>/dev/null | grep -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' | sort | uniq -d)
-[ -n "$dup" ] && echo "멈춤: CHANGELOG 버전 헤더 중복 — $dup"
+if [ -n "$dup" ]; then echo "멈춤: CHANGELOG 버전 헤더 중복 — $dup"; fi
 ```
 
 멈추면 브랜치를 타겟 위로 다시 올려 범프하고 **푸시한 뒤** 다시 대조한다. 버전 파일 이름이 다른 레포는 그 레포의 파일로 바꿔 같은 대조를 한다.
