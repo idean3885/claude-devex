@@ -10,6 +10,11 @@
 
 <!-- bump-version.sh 삽입 지점 -->
 
+## [8.3.1] - 2026-08-27
+
+### Changed
+- refactor: style-rules 의 절 번호와 배치 순서를 맞춘다 (purpose PU5·PU6, readability L5·L6, ai-tells I-3·I-7, authoring AU7·AU8). CLAUDE.md 체크리스트에 순서 검사 명령 추가 (#374)
+
 ## [8.3.0] - 2026-08-27
 
 ### Added
