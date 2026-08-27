@@ -9,6 +9,9 @@
 #   on      마커 생성 (기본 TTL 30분).
 #           scopes 를 주면 그 갈래만 열린다. 생략하면 all 이고 모든 갈래가 열린다.
 #           두 번째 인자가 숫자면 옛 형식(ttl)으로 읽어 all 로 연다.
+#           **기존 마커를 대체한다.** 합집합으로 열지 않는다: 합치면 TTL 도 함께 연장되어
+#           먼저 연 갈래의 창이 사람이 의도한 길이를 넘긴다. 두 갈래가 필요하면
+#           `on a,b` 로 한 번에 연다. 차단 메시지가 이미 열린 갈래를 담은 명령을 제시한다.
 #   off     마커 삭제 (즉시 차단 복귀).
 #   status  현재 허용 상태 출력.
 #
@@ -51,6 +54,18 @@ case "$cmd" in
     done)
     scopes_json="[${scopes_json%,}]"
     [ "$scopes_json" = "[]" ] && scopes_json='["all"]'
+
+    # 살아 있는 마커를 덮어쓰면 그 사실을 알린다. 조용히 대체하면 앞서 연 갈래가
+    # 사라진 것을 아무도 모르고, 그 갈래가 필요한 명령이 다시 차단된다 (#353).
+    if [ -f "$MARKER" ]; then
+      prev_exp=$(sed -n 's/.*"expiresAt":\([0-9]*\).*/\1/p' "$MARKER")
+      prev_scopes=$(sed -n 's/.*"scopes":\[\([^]]*\)\].*/\1/p' "$MARKER" | tr -d '"' | tr -d ' ')
+      if [ -n "$prev_exp" ] && [ "$prev_exp" -gt "$(( $(date +%s) * 1000 ))" ] 2>/dev/null; then
+        if [ -n "$prev_scopes" ] && [ "$prev_scopes" != "$scopes" ]; then
+          echo "[action-gate-allow] 이전 갈래(${prev_scopes})를 대체합니다. 함께 열려면 on ${prev_scopes},${scopes} 형태로 실행하세요." >&2
+        fi
+      fi
+    fi
 
     mkdir -p "$(dirname "$MARKER")"
     now_ms=$(( $(date +%s) * 1000 ))

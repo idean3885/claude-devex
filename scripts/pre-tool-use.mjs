@@ -232,13 +232,23 @@ if (!DISABLE) {
           // 이 메시지는 자립해야 한다. 정본 절차(GATE 3)는 flow 스킬 안에 있어 /flow 를
           // 거치지 않은 세션에는 로딩되지 않는다. 게이트가 발동하는 순간 컨텍스트에 있다고
           // 보장되는 것은 이 문자열뿐이므로, 실행 주체·형식·차단 사실을 여기서 다 말한다.
-          // 개방 명령에 감지된 갈래만 싣는다. 사용자가 그대로 실행하면 그 갈래만 열리고,
-          // 승인 대상이 아니던 행위는 다시 사람에게 온다. 갈래를 손으로 고르게 하지 않는다.
-          const scopeArg = [...new Set(gateResult.ops.map(o => o.scope).filter(Boolean))].join(',') || 'all';
+          // 개방 명령에는 감지된 갈래와 **이미 열려 있던 갈래**를 함께 싣는다.
+          // `on` 은 마커를 새로 쓰므로 감지된 갈래만 싣으면 앞서 연 갈래가 지워진다. 그러면
+          // 한 작업에서 두 갈래가 순차로 필요할 때 개방 → 차단 → 개방이 반복되고, 같은 종류의
+          // 요청이 사람에게 네 번 간다 (#353). 합집합을 스크립트에서 자동으로 만들지 않는 이유는
+          // TTL 이 함께 연장되어 먼저 연 갈래의 창이 사람이 의도한 길이를 넘기기 때문이다.
+          // 마커는 사람이 마지막으로 승인한 것을 그대로 담고, 합치는 일은 이 메시지가 한다.
+          const blockedScopes = [...new Set(gateResult.ops.map(o => o.scope).filter(Boolean))];
+          const openScopes = (gateResult.allowed || []).filter(s => s && s !== 'all' && s !== 'unscoped');
+          const carried = openScopes.filter(s => !blockedScopes.includes(s));
+          const scopeArg = [...blockedScopes, ...carried].join(',') || 'all';
           const msg = `${header} 되돌리기 어려운/외부 영향 행위를 감지했습니다:\n${opLines}\n\n` +
             `게이트 개방은 사용자만 실행할 수 있습니다. 아래를 그대로 제시하고 기다리세요:\n` +
             `  !bash ${gateRoot}/scripts/action-gate-allow.sh on ${scopeArg}\n\n` +
             `이 명령은 위 갈래(${scopeArg})만 엽니다. 다른 갈래는 계속 차단되고 다시 사람에게 옵니다.\n` +
+            (carried.length
+              ? `\`on\` 은 열려 있던 갈래를 대체합니다. 이미 열린 갈래(${carried.join(',')})를 위 명령에 함께 담았으니 이 한 줄로 필요한 갈래가 모두 열립니다.\n`
+              : '') +
             `어시스턴트가 이 스크립트를 실행하면 자기 수정으로 차단됩니다. 정상 동작이며 우회하지 않습니다.\n` +
             `자연어 승인("승인합니다"·"머지 승인" 등)은 게이트를 열지 않습니다. 마커 파일 생성만이 개방 신호입니다.\n` +
             `read-only·가역 명령(git commit, 브랜치 push, gh pr create 등)은 통과합니다.\n` +
