@@ -153,6 +153,20 @@ main ────────────────●─────
 - [ ] **버전 범프**: VERSION, CHANGELOG.md, plugin.json, marketplace.json 4곳 모두 갱신 확인
 - [ ] 스킬 파일 존재 확인 (`skills/` 전체 + `skills/flow/guides/`)
 - [ ] 다이어그램 확인. README 는 아스키 플로우만 쓴다 (mermaid 0장). `docs/usage.md` 의 mermaid 1장은 렌더 확인
+- [ ] **`config/style-rules/` 를 고쳤으면 절 번호와 배치 순서가 맞는지 확인** (규칙을 번호로 참조하므로 순서가 어긋나면 새 규칙을 넣을 자리가 정해지지 않는다)
+  ```bash
+  python3 -c "
+  import re,glob,io
+  from collections import defaultdict
+  for p in sorted(glob.glob('config/style-rules/**/*.md',recursive=True)):
+      g=defaultdict(list)
+      for l in io.open(p,encoding='utf-8'):
+          m=re.match(r'^#{2,3} ([A-Z]{1,3})[-]?(\\d+)[\\.\\s]', l)
+          if m: g[m.group(1)].append(int(m.group(2)))
+      for k,v in g.items():
+          if v!=sorted(v): print(p,k,v)
+  "
+  ```
 - [ ] CLAUDE.md 템플릿 부분과 프로젝트 부분 구분 유지
 - [ ] 적용 사례 레포에서 스킬이 정상 동작하는지 확인
 
