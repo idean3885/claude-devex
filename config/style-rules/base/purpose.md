@@ -162,7 +162,7 @@ PU5 와 `readability`·`tone` 이 같은 문단에 걸리면 **PU5 를 먼저 �
 
 ## 참고 레퍼런스
 
-| 구분 | 출처 | 역할 |
+| 출처 계열 | 출처 | 역할 |
 |------|------|------|
 | 문서 구조 | Barbara Minto 「The Pyramid Principle」 | 문서는 독자의 질문 하나에 답한다. 도입부 SCQA 구조 |
 | 테크 실용 | Google Technical Writing Course | 착수 전 독자와 문서 범위를 정의하는 단계를 별도로 둔다 |
