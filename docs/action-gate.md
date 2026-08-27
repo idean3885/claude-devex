@@ -47,8 +47,8 @@
 
 `~/.claude/ops-agent/confidential-keywords.local.json` 이 정본입니다. 스키마와 작성 예시는 [`templates/confidential-keywords.example.json`](../templates/confidential-keywords.example.json) 에 있습니다.
 
-| 항목 | 적용 표면 |
-|------|-----------|
+| 설정 키 | 적용 표면 |
+|---------|-----------|
 | `keywords` / `patterns` | 전 표면 |
 | `externalOnly` | public 만 |
 | `personalDevOnly` | internal 만 |
@@ -118,8 +118,8 @@
 
 시간만으로 열면 그 창 안에서 승인 대상이 아니던 행위까지 통과합니다. PR 머지를 위해 연 창에서 기본 브랜치 직접 push 가 통과한 사례가 있습니다. 둘 다 되돌리기 어려운 행위이고 전역 금지 규칙이 있는 쪽이 뒤였습니다.
 
-| 갈래 | 대상 |
-|------|------|
+| 갈래 | 대상 명령 |
+|------|-----------|
 | `cluster-write` | kubectl · argocd · helm mutation |
 | `repo-merge` | `gh pr merge` |
 | `repo-release` | `gh release create/edit/delete` |
