@@ -112,7 +112,7 @@ flowchart LR
 | `scripts/post-merge-sync.sh` | 머지 후 로컬 캐시 동기 | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 | `scripts/action-gate-allow.sh` | 되돌리기 어려운 행위의 세션 허용 토글 | [action-gate.md](action-gate.md) |
 | `scripts/pre-merge-check.sh` | 머지 전 버전·CHANGELOG 대조 (검출 시 종료 코드 1) | [action-gate.md](action-gate.md) |
-| `scripts/selftest-action-gate.mjs` | 액션 게이트 판정 자체 점검 (13건) | [action-gate.md](action-gate.md) |
+| `scripts/selftest-action-gate.mjs` | 액션 게이트 판정·개방 안내 자체 점검 (22건) | [action-gate.md](action-gate.md) |
 | `scripts/resolve-manifest.mjs` | 소유자 식별과 org·repo 매니페스트 발견 | [conventions-slot.md](conventions-slot.md) |
 | `config/style-rules/metrics/tells_count.py` | AI 티 지표 측정 | [지표 정의](../config/style-rules/metrics/metrics-spec.md) |
 
