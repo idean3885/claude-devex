@@ -106,25 +106,40 @@ PlantUML 사용 시: `example.puml` → `example.svg` 필수 생성
 
 [Semantic Versioning](https://semver.org/) 기준.
 
-1인 개발 레포이므로 변경 = 버전업이다. 예외를 두지 않는다.
+**변경은 `Unreleased` 에 쌓고, 버전은 사용자가 끊을 때 올린다.** PR 하나마다 올리지 않는다.
 
-체인지로그는 [Keep a Changelog 1.1.0](https://keepachangelog.com/ko/1.1.0/) 분류를 따른다. `Unreleased` 섹션은 두지 않는다: 변경을 즉시 버전업하므로 미발행 대기 구간이 없다.
+커밋마다 올리면 버전 번호가 변경 덩어리를 가리키지 못한다. 실제로 67일 동안 208번 올렸고 하루 19번인 날이 있었다. 「8.7.0 에서 8.7.2 로 올리면 무엇이 달라지나」에 답할 수 없으면 번호만 늘어난 것이다 (#409).
+
+체인지로그는 [Keep a Changelog 1.1.0](https://keepachangelog.com/ko/1.1.0/) 을 따른다. 그 규격이 `Unreleased` 를 권하는 근거는 릴리즈 시점의 작성 부담 제거, 다음 버전 예고, 몰아 쓰지 않기, 워크플로 편입 넷이다.
+
+항목은 사용자에게 보이는 영향이 있을 때만 적는다. `refactor` 와 `chore` 는 기본 제외이고, 영향이 있으면 카테고리를 직접 지정해 넣는다. `docs` 는 통과다. 이 레포는 규칙 문서 자체가 제품이다.
 
 **이 레포의 커밋 타입 선언**: `feat`, `fix`, `docs`, `refactor`, `chore`, `ci`
 
 기본값에서 `build`(빌드 단계 없음), `style`·`test`·`perf`(이력 0건)를 뺀 목록이다. `init`, `release`, `usage` 는 쓰지 않는다.
 
-`scripts/bump-version.sh` 가 아래 4곳을 동시에 갱신한다. 수동 편집하면 4곳이 어긋나 캐시 경로 해석이 깨진다.
+`scripts/bump-version.sh` 가 두 서브커맨드로 나뉜다.
+
+```bash
+./scripts/bump-version.sh add "<changelog_entry>" [category]   # 작업 때마다
+./scripts/bump-version.sh release <version>                    # 사용자가 끊을 때
+```
+
+| 서브커맨드 | 하는 일 |
+|---|---|
+| `add` | `CHANGELOG.md` 의 `Unreleased` 에 항목만 쌓는다. 버전 파일은 건드리지 않는다 |
+| `release` | `Unreleased` 를 버전 섹션으로 끊고 아래 4곳을 함께 갱신한다 |
+
+`release` 가 갱신하는 4곳이다. 수동 편집하면 어긋나 캐시 경로 해석이 깨진다.
+
 - `VERSION`
 - `CHANGELOG.md`
 - `.claude-plugin/plugin.json` → `version`
 - `.claude-plugin/marketplace.json` → `plugins[0].version`
 
-```bash
-./scripts/bump-version.sh <version> "<changelog_entry>" [category]
-```
+`add` 는 넷을 거부한다. em dash, 이슈 번호 없음, `refactor`·`chore` 무지정, 카테고리를 유도할 수 없는 항목이다. `category` 를 생략하면 타입 접두에서 유도하고 본문에서 그 접두를 걷는다. 분류 헤딩이 이미 접두의 역할을 하기 때문이다.
 
-`category` 를 생략하면 changelog 항목의 타입 접두에서 유도한다. 유도할 수 없으면 실패하므로, 항목에 `feat:` 같은 접두를 붙이거나 카테고리를 직접 넘긴다. CHANGELOG 삽입 지점은 헤더의 앵커 주석이며, 앵커가 사라지면 스크립트가 멈춘다.
+`release` 는 `Unreleased` 가 비어 있으면 멈춘다. CHANGELOG 삽입 지점은 헤더의 앵커 주석이며, 앵커가 사라지면 스크립트가 멈춘다.
 
 ### 산출물 특성
 
@@ -142,7 +157,7 @@ main ────────────────●─────
 - PR 타겟: `main` 직접
 - 이슈 플로우 동일 적용: `/flow` 단일 진입 (issue → spec → 구현 → commit → pr)
 
-반영 경로: 워크트리 → `bump-version.sh` → 커밋 → PR → 웹 머지. main 직접 push 는 하지 않는다.
+반영 경로: 워크트리 → `bump-version.sh add` → 커밋 → PR → 웹 머지. main 직접 push 는 하지 않는다. 릴리즈는 별도이고 사용자가 시점을 정한다.
 
 로컬 `gh pr merge` 를 쓸 때는 `./scripts/pre-merge-check.sh <브랜치> main` 을 앞에 물린다. 브랜치가 타겟보다 오래된 베이스 위에 있으면 머지가 버전을 뒤로 밀어낸다. 검출 시 종료 코드 1 이라 `&&` 체인이 멈춘다. 한시 권한 대상 행위를 다른 명령과 한 블록에 두면 훅이 차단한다 (ADR 0011).
 
@@ -152,7 +167,8 @@ main ────────────────●─────
 
 ### 변경 시 검증 체크리스트
 
-- [ ] **버전 범프**: VERSION, CHANGELOG.md, plugin.json, marketplace.json 4곳 모두 갱신 확인
+- [ ] **`Unreleased` 적립**: `bump-version.sh add` 로 항목을 쌓았는지 확인. PR 에서 버전은 올리지 않는다
+- [ ] **릴리즈 시**: `bump-version.sh release` 로 VERSION, CHANGELOG.md, plugin.json, marketplace.json 4곳 갱신 확인
 - [ ] 스킬 파일 존재 확인 (`skills/` 전체 + `skills/flow/guides/`)
 - [ ] 다이어그램 확인. README 는 아스키 플로우만 쓴다 (mermaid 0장). `docs/usage.md` 의 mermaid 1장은 렌더 확인
 - [ ] **`config/style-rules/` 를 고쳤으면 절 번호와 배치 순서가 맞는지 확인** (규칙을 번호로 참조하므로 순서가 어긋나면 새 규칙을 넣을 자리가 정해지지 않는다)
