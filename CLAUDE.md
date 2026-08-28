@@ -73,9 +73,9 @@ issue · spec · commit · pr 은 별도 스킬이 아니라 `/flow` 내부의 �
 
 PlantUML 사용 시: `example.puml` → `example.svg` 필수 생성
 
-구조를 그릴 때는 **어느 시점의 층인지 먼저 정한다.** 층 선택·정지 조건·그림 자립 조건은 [config/style-rules/extensions/architecture.md](config/style-rules/extensions/architecture.md) 가 정본이다.
+구조를 그릴 때는 **어느 레벨인지 먼저 정한다.** 레벨 선택·정지 조건·다이어그램 자립 조건은 [config/style-rules/extensions/architecture.md](config/style-rules/extensions/architecture.md) 가 정본이다.
 
-렌더 결과를 확인하지 않은 그림은 넘기지 않는다. 선이 상자를 관통하거나 라벨이 겹치는 결함은 소스에서 보이지 않는다.
+렌더 결과를 확인하지 않은 다이어그램은 넘기지 않는다. 선이 상자를 관통하거나 라벨이 겹치는 결함은 소스에서 보이지 않는다.
 
 ## 커밋 컨벤션
 
