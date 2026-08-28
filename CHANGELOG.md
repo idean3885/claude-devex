@@ -10,6 +10,11 @@
 
 <!-- bump-version.sh 삽입 지점 -->
 
+## [8.9.0] - 2026-08-28
+
+### Added
+- feat: 컴팩트 재료 보존 훅 추가 (PreCompact/PostCompact)
+
 ## [8.8.2] - 2026-08-27
 
 ### Fixed
