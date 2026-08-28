@@ -56,7 +56,7 @@ flowchart LR
   W --> T{"도구 실행"}
   T -->|"공개 표면 쓰기"| C["대외비 가드"]
   T -->|"커밋·PR 본문"| H["What 가드"]
-  T -->|"머지·릴리즈·삭제"| A["액션 게이트"]
+  T -->|"머지·릴리즈·삭제"| A["한시 권한"]
   T -->|"문서 편집"| E["편집 후 자가 점검"]
   C -->|히트| X["차단"]
   H -->|히트| X
@@ -112,7 +112,7 @@ flowchart LR
 | `scripts/post-merge-sync.sh` | 머지 후 로컬 캐시 동기 | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 | `scripts/action-gate-allow.sh` | 되돌리기 어려운 행위의 세션 허용 토글 | [action-gate.md](action-gate.md) |
 | `scripts/pre-merge-check.sh` | 머지 전 버전·CHANGELOG 대조 (검출 시 종료 코드 1) | [action-gate.md](action-gate.md) |
-| `scripts/selftest-action-gate.mjs` | 액션 게이트 판정·개방 안내 자체 점검 (22건) | [action-gate.md](action-gate.md) |
+| `scripts/selftest-action-gate.mjs` | 한시 권한 판정·개방 안내 자체 점검 (22건) | [action-gate.md](action-gate.md) |
 | `scripts/resolve-manifest.mjs` | 소유자 식별과 org·repo 매니페스트 발견 | [conventions-slot.md](conventions-slot.md) |
 | `config/style-rules/metrics/tells_count.py` | AI 티 지표 측정 | [지표 정의](../config/style-rules/metrics/metrics-spec.md) |
 | `config/style-rules/metrics/length_stats.py` | 유형별 분량 기준값(행) 측정 | [분량 SSOT](../config/style-rules/base/length.md) |
