@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-# pre-merge-check.sh — 머지 전 버전 대조 (flow GATE 6).
+# pre-merge-check.sh: 머지 전 버전 대조 (flow GATE 6).
 #
 # 원격 브랜치와 타겟의 버전 파일을 비교하고 CHANGELOG 버전 헤더 중복을 본다.
+#
+# 버전이 같은 것은 정상이다. 적립 PR 은 Unreleased 에 항목만 쌓고 버전을 올리지 않는다.
+# 막는 것은 **뒤로 미는 것** 하나다. 브랜치가 타겟보다 오래된 베이스 위에서 범프하면
+# 머지가 타겟의 버전을 낮춘다 (#409 이전에는 「같으면 멈춤」이라 적립 PR 을 전부 막았다).
 # 검출하면 종료 코드 1, 통과하면 0 이다. `&& gh pr merge` 로 물리면 검출 시 머지가 실행되지
 # 않는다. 판정을 문자열로만 알리면 출력을 읽지 않은 채 다음 명령이 실행된다 (#386).
 #
@@ -43,7 +47,7 @@ git fetch -q origin || { echo "멈춤: git fetch 실패" >&2; exit 1; }
 # 상태가 통과와 같은 모양이 된다. 푸시하지 않은 로컬 수정이 이 사고의 원인이었다.
 for ref in "$branch" "$target"; do
   if ! git rev-parse -q --verify "refs/remotes/origin/$ref" >/dev/null; then
-    echo "멈춤: origin/$ref 이 없다 — 푸시하지 않았거나 이름이 다르다" >&2
+    echo "멈춤: origin/$ref 이 없다. 푸시하지 않았거나 이름이 다르다" >&2
     exit 1
   fi
 done
@@ -55,13 +59,12 @@ tv=$(git show "origin/$target:$VERSION_FILE" 2>/dev/null | tr -d ' \n')
 if [ -z "$bv" ] || [ -z "$tv" ]; then
   echo "건너뜀: $VERSION_FILE 없음 (브랜치 '${bv:-없음}', 타겟 '${tv:-없음}')"
 elif [ "$bv" = "$tv" ]; then
-  echo "멈춤: 브랜치와 타겟의 버전이 같다 ($bv)" >&2
-  fail=1
+  echo "통과: 버전 동일 ($bv). 적립 PR 이다"
 elif [ "$(printf '%s\n%s\n' "$bv" "$tv" | sort -V | tail -1)" != "$bv" ]; then
-  echo "멈춤: 브랜치 $bv 가 타겟 $tv 보다 낮다 — 머지가 버전을 뒤로 밀어낸다" >&2
+  echo "멈춤: 브랜치 $bv 가 타겟 $tv 보다 낮다. 머지가 버전을 뒤로 밀어낸다" >&2
   fail=1
 else
-  echo "통과: 버전 $tv → $bv"
+  echo "통과: 릴리즈 PR ($tv → $bv)"
 fi
 
 changelog=$(git show "origin/$branch:$CHANGELOG_FILE" 2>/dev/null)
@@ -70,7 +73,7 @@ if [ -z "$changelog" ]; then
 else
   dup=$(printf '%s\n' "$changelog" | grep -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' | sort | uniq -d)
   if [ -n "$dup" ]; then
-    echo "멈춤: $CHANGELOG_FILE 버전 헤더 중복 — $(printf '%s' "$dup" | tr '\n' ' ')" >&2
+    echo "멈춤: $CHANGELOG_FILE 버전 헤더 중복 $(printf '%s' "$dup" | tr '\n' ' ')" >&2
     fail=1
   else
     echo "통과: $CHANGELOG_FILE 버전 헤더 중복 없음"
@@ -78,7 +81,7 @@ else
 fi
 
 if [ "$fail" -ne 0 ]; then
-  echo "브랜치를 타겟 위로 다시 올려 범프하고 푸시한 뒤 다시 실행한다" >&2
+  echo "브랜치를 타겟 위로 다시 올린 뒤 푸시하고 다시 실행한다" >&2
   exit 1
 fi
 exit 0
