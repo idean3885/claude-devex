@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# action-gate-allow.sh — ops-agent 액션 게이트 세션 허용 마커 관리.
+# action-gate-allow.sh — ops-agent 한시 권한 세션 허용 마커 관리.
 #
-# pre-tool-use.mjs 의 "액션 게이트" 는 되돌리기 어려운/외부 영향 행위(클러스터 mutation·
+# pre-tool-use.mjs 의 "한시 권한" 는 되돌리기 어려운/외부 영향 행위(클러스터 mutation·
 # PR 머지·릴리즈·force push·리소스 삭제)를 이 마커가 있을 때만 통과시킨다.
 # 사용자 명시 승인 후에만 켤 것.
 #
@@ -15,7 +15,9 @@
 #           살아 있는 마커를 덮어쓸 때 **잃는 갈래가 있으면** 알린다. 새 목록이 이전을
 #           모두 포함하면 사라지는 것이 없으므로 알리지 않는다.
 #   off     마커 삭제 (즉시 차단 복귀).
-#   status  현재 허용 상태 출력.
+#   status  현재 허용 상태 출력. 갈래·잔여 시간·만료 여부를 사람이 읽는 형태로 낸다.
+#           어시스턴트가 착수 전에 이 명령으로 판정한다 (docs/action-gate.md 개방 절차 0단계).
+#           읽기만 하므로 어시스턴트가 직접 실행해도 자기 수정으로 차단되지 않는다.
 #
 # 갈래 목록 (차단 메시지가 해당 갈래를 담은 명령을 그대로 제시한다):
 #   cluster-write         kubectl·argocd·helm mutation
@@ -118,11 +120,21 @@ case "$cmd" in
     echo "[action-gate-allow] OFF"
     ;;
   status)
-    if [ -f "$MARKER" ]; then
-      echo "[action-gate-allow] $(cat "$MARKER")"
-    else
-      echo "[action-gate-allow] OFF (마커 없음)"
+    # 마커 원문만 찍으면 만료 시각이 epoch 밀리초라 읽는 쪽이 계산해야 한다. 계산을
+    # 넘기면 판정이 흔들리므로 여기서 끝낸다 (#406).
+    if [ ! -f "$MARKER" ]; then
+      echo "[action-gate-allow] CLOSED (마커 없음)"
+      exit 0
     fi
+    marker=$(cat "$MARKER")
+    exp_ms=$(printf '%s' "$marker" | sed -n 's/.*"expiresAt":\([0-9]*\).*/\1/p')
+    scopes=$(printf '%s' "$marker" | sed -n 's/.*"scopes":\[\([^]]*\)\].*/\1/p' | tr -d '"')
+    now_ms=$(( $(date +%s) * 1000 ))
+    if [ -z "$exp_ms" ] || [ "$now_ms" -ge "$exp_ms" ]; then
+      echo "[action-gate-allow] EXPIRED (갈래 ${scopes:-?})"
+      exit 0
+    fi
+    echo "[action-gate-allow] OPEN  갈래: ${scopes:-?}  잔여: $(( (exp_ms - now_ms + 59000) / 60000 ))분"
     ;;
   *)
     echo "usage: $0 on|off|status [scopes] [ttl_minutes] [session_id]" >&2

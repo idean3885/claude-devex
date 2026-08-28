@@ -19,7 +19,7 @@
  *    - `keywords` / `patterns` (루트) 는 타겟 무관 항상 차단 (예: 위키)
  *
  * 2. 도메인 What 추상화 가드: 커밋·PR·이슈 본문의 구현 세부(클래스명·어노테이션·yaml 키 등) 차단.
- * 3. 액션 게이트: 되돌리기 어려운/외부 영향 행위(클러스터 mutation·PR 머지·릴리즈·force push
+ * 3. 한시 권한: 되돌리기 어려운/외부 영향 행위(클러스터 mutation·PR 머지·릴리즈·force push
  *    ·리소스 삭제)를 세션 명시 허용 전까지 차단. 권한 추측 실행을 기계적으로 차단.
  *    세션 허용: OPS_AGENT_ACTION_GATE_ALLOW=1 또는 action-gate-allow.sh on 마커.
  *    드라이런 OPS_AGENT_ACTION_GATE_DRYRUN=1 · 비활성 OPS_AGENT_ACTION_GATE_DISABLE=1.
@@ -88,7 +88,7 @@ const DRYRUN = process.env.OPS_AGENT_CONFIDENTIAL_DRYRUN === '1';
 const WHAT_GUARD_DISABLE = process.env.OPS_AGENT_WHAT_GUARD_DISABLE === '1';
 const WHAT_GUARD_DRYRUN = process.env.OPS_AGENT_WHAT_GUARD_DRYRUN === '1';
 
-// 액션 게이트 플래그 (레거시 OPS_AGENT_CLUSTER_GUARD_* 도 계속 인식)
+// 한시 권한 플래그 (레거시 OPS_AGENT_CLUSTER_GUARD_* 도 계속 인식)
 const GATE_DISABLE = process.env.OPS_AGENT_ACTION_GATE_DISABLE === '1' || process.env.OPS_AGENT_CLUSTER_GUARD_DISABLE === '1';
 const GATE_DRYRUN = process.env.OPS_AGENT_ACTION_GATE_DRYRUN === '1' || process.env.OPS_AGENT_CLUSTER_GUARD_DRYRUN === '1';
 
@@ -217,15 +217,15 @@ if (!DISABLE) {
         }
       }
 
-      // 액션 게이트: 되돌리기 어려운/외부 영향 행위(클러스터 mutation·PR 머지·릴리즈·force push
+      // 한시 권한: 되돌리기 어려운/외부 영향 행위(클러스터 mutation·PR 머지·릴리즈·force push
       // ·리소스 삭제)는 세션 명시 허용 없으면 차단한다. 권한을 추측해 실행하는 사고를 기계적으로 막는다.
-      if (!GATE_DISABLE && remainingMs() <= 0) noteBudgetExceeded('액션 게이트');
+      if (!GATE_DISABLE && remainingMs() <= 0) noteBudgetExceeded('한시 권한');
       if (!GATE_DISABLE && remainingMs() > 0) {
         const gateResult = runActionGate(command, hookInput.session_id, hookInput.cwd);
         if (gateResult.blocked) {
           const header = GATE_DRYRUN
-            ? '[ops-agent 액션 게이트 · 드라이런]'
-            : '[ops-agent 액션 게이트 · 차단]';
+            ? '[ops-agent 한시 권한 · 드라이런]'
+            : '[ops-agent 한시 권한 · 차단]';
           // 대체 경로가 있는 룰은 함께 싣는다. 금지만 통보하면 다음 행동이 정해지지 않는다.
           const opLines = gateResult.ops.map(o => {
             const head = `  - [${o.category}] ${o.tool} ${o.verb}`;
@@ -251,14 +251,14 @@ if (!DISABLE) {
           const carried = openScopes.filter(s => !blockedScopes.includes(s));
           const scopeArg = [...blockedScopes, ...carried].join(',') || 'all';
           const msg = `${header} 되돌리기 어려운/외부 영향 행위를 감지했습니다:\n${opLines}\n\n` +
-            `게이트 개방은 사용자만 실행할 수 있습니다. 아래를 그대로 제시하고 기다리세요:\n` +
+            `권한 개방은 사용자만 실행할 수 있습니다. 아래를 그대로 제시하고 기다리세요:\n` +
             `  !bash ${gateRoot}/scripts/action-gate-allow.sh on ${scopeArg}\n\n` +
             `이 명령은 위 갈래(${scopeArg})만 엽니다. 다른 갈래는 계속 차단되고 다시 사람에게 옵니다.\n` +
             (carried.length
               ? `\`on\` 은 열려 있던 갈래를 대체합니다. 이미 열린 갈래(${carried.join(',')})를 위 명령에 함께 담았으니 이 한 줄로 필요한 갈래가 모두 열립니다.\n`
               : '') +
             `어시스턴트가 이 스크립트를 실행하면 자기 수정으로 차단됩니다. 정상 동작이며 우회하지 않습니다.\n` +
-            `자연어 승인("승인합니다"·"머지 승인" 등)은 게이트를 열지 않습니다. 마커 파일 생성만이 개방 신호입니다.\n` +
+            `자연어 승인("승인합니다"·"머지 승인" 등)은 권한을 열지 않습니다. 마커 파일 생성만이 개방 신호입니다.\n` +
             `read-only·가역 명령(git commit, 브랜치 push, gh pr create 등)은 통과합니다.\n` +
             `전체 절차: docs/action-gate.md · 해제: action-gate-allow.sh off · 파이프라인 비활성: OPS_AGENT_ACTION_GATE_DISABLE=1`;
           if (GATE_DRYRUN) {
@@ -281,8 +281,8 @@ if (!DISABLE) {
           const co = detectGateCohabitation(command, hookInput.cwd);
           if (co) {
             const header = GATE_DRYRUN
-              ? '[ops-agent 액션 게이트 · 드라이런]'
-              : '[ops-agent 액션 게이트 · 차단]';
+              ? '[ops-agent 한시 권한 · 드라이런]'
+              : '[ops-agent 한시 권한 · 차단]';
             const msg = `${header} 되돌리기 어려운 행위(${co.op.tool} ${co.op.verb})가 다른 명령과 한 블록에 있습니다.\n` +
               `앞선 명령:\n${co.preceding.map(s => `  - ${s.length > 120 ? s.slice(0, 120) + '…' : s}`).join('\n')}\n\n` +
               `앞선 명령의 출력을 읽기 전에 이 행위가 실행됩니다. 게이트가 판정을 내려도 같은 블록의\n` +
@@ -751,7 +751,7 @@ function runWhatAbstractionGuard(command) {
   return scanWhatViolations(texts);
 }
 
-// ─── 액션 게이트 ───
+// ─── 한시 권한 ───
 // 되돌리기 어려운/외부 영향 행위를 감지해 세션 명시 허용 전까지 차단한다.
 // 목적: 어시스턴트가 권한을 추측해 되돌리기 어려운 행위(클러스터 mutation·PR 머지·릴리즈·
 //   force push·리소스 삭제)를 실행하는 사고를 기계적으로 막는다. 명확한 승인 = 세션 허용 플래그.

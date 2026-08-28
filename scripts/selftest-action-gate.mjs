@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * selftest-action-gate.mjs — 액션 게이트 판정 자체 점검.
+ * selftest-action-gate.mjs — 한시 권한 판정 자체 점검.
  *
  * `pre-tool-use.mjs` 를 고쳤으면 이것을 돌린다. 게이트는 발동할 때만 존재가 드러나므로,
  * 조용히 무력화되면 아무 신호가 없다. 실제로 판정 스니펫의 종료 코드가 뒤집힌 채 배포된
