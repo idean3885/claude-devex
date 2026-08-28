@@ -13,6 +13,8 @@
  * 종료 코드: 실패 1, 전부 통과 0
  */
 import { spawnSync } from 'child_process';
+import { mkdtempSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -65,6 +67,28 @@ for (const [name, prev, next, expect] of SCOPE_CASES) {
   console.log(`${ok ? '  OK' : '  XX'}  개방 안내: ${name} — ${warn || '알림 없음'}`);
 }
 
+// ttl 자리에 숫자가 아닌 값이 오면 산술식에 넣기 전에 형식을 돌려주는지. 갈래를 공백으로
+// 나열하면 둘째 갈래가 이 자리로 들어오고, 그대로 두면 bash 내부 오류로 죽어 원인이
+// 가려진다 (#414). HOME 을 임시 경로로 돌려 사용자의 열린 창을 건드리지 않는다.
+const TTL_CASES = [
+  ['갈래를 공백으로 나열', ['on', 'git-force', 'cluster-write'], 1, 'on git-force,cluster-write'],
+  ['ttl 이 숫자', ['on', 'git-force', '30'], 0, ''],
+  ['ttl 생략', ['on', 'git-force'], 0, ''],
+  ['옛 형식 (ttl 만)', ['on', '30'], 0, ''],
+];
+for (const [name, args, wantCode, expect] of TTL_CASES) {
+  const home = mkdtempSync(join(tmpdir(), 'gate-selftest-'));
+  const res = spawnSync('bash', [join(here, 'action-gate-allow.sh'), ...args], {
+    encoding: 'utf8',
+    env: { ...process.env, HOME: home },
+  });
+  const err = (res.stderr || '').trim();
+  const ok = res.status === wantCode && (expect ? err.includes(expect) : true);
+  if (!ok) failed++;
+  rmSync(home, { recursive: true, force: true });
+  console.log(`${ok ? '  OK' : '  XX'}  ttl 검사: ${name} — want ${wantCode}, got ${res.status}${err ? ` · ${err.split('\n').pop()}` : ''}`);
+}
+
 for (const [name, command, want] of CASES) {
   const res = spawnSync('node', [hook], {
     input: JSON.stringify({
@@ -102,5 +126,5 @@ for (const [name, command, want] of CASES) {
   console.log(`${ok ? '  OK' : '  XX'}  ${name} — want ${want}, got ${got}${detail ? ` · ${detail}` : ''}`);
 }
 
-console.log(failed ? `\n실패 ${failed}건` : `\n${CASES.length + SCOPE_CASES.length}건 전부 통과`);
+console.log(failed ? `\n실패 ${failed}건` : `\n${CASES.length + SCOPE_CASES.length + TTL_CASES.length}건 전부 통과`);
 process.exit(failed ? 1 : 0);
