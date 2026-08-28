@@ -85,6 +85,16 @@ case "$cmd" in
       sid="${4:-}"
     fi
 
+    # 갈래를 공백으로 나열하면 둘째 갈래가 ttl 자리로 들어온다. 그대로 두면 아래
+    # 산술식이 하이픈을 뺄셈으로 읽고 set -u 가 정의되지 않은 이름에서 죽는다.
+    # 죽은 자리의 문구는 원인을 가리키지 못하고, 마커에는 첫 갈래만 열린 채 남는다.
+    # 사용자는 둘 다 열렸다고 여긴다 (#414).
+    if ! [[ "$ttl" =~ ^[0-9]+$ ]]; then
+      echo "[action-gate-allow] ttl 은 숫자여야 합니다: ${ttl}" >&2
+      echo "[action-gate-allow] 갈래를 여러 개 열려면 쉼표로 나열하세요 — on ${scopes},${ttl}" >&2
+      exit 1
+    fi
+
     # 쉼표 목록을 JSON 배열로. 공백은 제거하고 빈 항목은 넣지 않는다.
     # 마지막 항목에 개행이 없으면 read 가 거짓을 돌려주고 그 항목이 사라진다. %s\n 로 닫는다.
     scopes_json=$(printf '%s\n' "$scopes" | tr ',' '\n' | while IFS= read -r s; do
