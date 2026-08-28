@@ -13,6 +13,8 @@
 
 ## [Unreleased]
 
+## [8.11.0] - 2026-08-28
+
 ### Added
 * 변경을 Unreleased 에 쌓았다가 릴리즈 시점에 끊는다. bump-version.sh 를 add·release 로 나누고 적립 시 em dash·이슈 번호·큐레이션을 검사한다 (#409)
 
