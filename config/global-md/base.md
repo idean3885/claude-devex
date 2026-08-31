@@ -18,7 +18,7 @@ ops-agent 의 `config/style-rules/{base,extensions}/` 가 모든 한국어 문�
 | `base/purpose.md` | 문서의 목적과 범위 (PU1~PU5). 착수 전에 판정하는 유일한 파일 |
 | `base/ai-tells.md` | AI 티 분류 (A~K, im-not-ai MIT 차용) |
 | `base/readability.md` | 구조 가독성 (P·H·L·C·V·CJ·BQ) |
-| `base/tone.md` | 저자 톤 (T1~T17) |
+| `base/tone.md` | 저자 톤 (T1~T22) |
 | `base/punctuation.md` | 한국어 구두점 (PN1~PN6) |
 | `base/length.md` | 산출물 분량 (LN1~LN2) |
 | `base/authoring.md` | `SKILL.md`·`CLAUDE.md`·가이드·provider 정의를 쓰거나 고칠 때 적용 (AU1~AU6, mattpocock/skills MIT 차용) |

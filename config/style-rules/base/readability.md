@@ -6,7 +6,7 @@
 > Nielsen Norman Group 웹 가독성 연구, WCAG CJK 타이포그래피 권장사항 종합.
 
 > **분리 구조**: 본 파일은 구조 가독성(P·H·L·C·V·CJ·BQ)만 다룬다.
-> - 저자 톤(T1~T17) → [`tone.md`](./tone.md)
+> - 저자 톤(T1~T22) → [`tone.md`](./tone.md)
 > - 한국어 구두점(PN1~PN6) → [`punctuation.md`](./punctuation.md)
 > - AI 티 분류(A~K) → [`ai-tells.md`](./ai-tells.md)
 > - 산출물 분량(LN1~LN2) → [`length.md`](./length.md)
