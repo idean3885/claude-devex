@@ -191,7 +191,8 @@ PU5 대조는 사실 정확성 검사의 문장 단위 인과 검사와 다릅�
 9. 한국어 구두점 (PN1-PN6)
 10. 문서의 목적 (PU6 근거 확인 상태): [base/purpose.md](../../config/style-rules/base/purpose.md)
 11. 산출물 분량 (LN1-LN2): [base/length.md](../../config/style-rules/base/length.md)
-12. 에이전트가 읽는 문서 (AU1-AU8): [base/authoring.md](../../config/style-rules/base/authoring.md). 위 "읽는 쪽 판정" 에 걸릴 때만 적용
+12. 다이어그램 라벨: 소스 펜스(`plantuml`·`mermaid`)의 라벨 문자열만 추출해 본문과 따로 검증한다. 대상은 T17(어휘 고정)·T8·K-4(물리 조작 동사)·T22(고유명사)이고 근거는 [extensions/architecture.md](../../config/style-rules/extensions/architecture.md) AR8. 아키텍처 문서가 아닌 산출물(이슈 본문·위키 등)에 들어간 다이어그램도 대상이다
+13. 에이전트가 읽는 문서 (AU1-AU8): [base/authoring.md](../../config/style-rules/base/authoring.md). 위 "읽는 쪽 판정" 에 걸릴 때만 적용
 
 LN 은 마지막에 적용한다. 톤·AI 티 교정으로 살아나는 섹션을 먼저 삭제하지 않기 위해서다.
 총량 측정은 위반 항목이 아니라 LN1·LN2 를 언제 적용할지 정하는 절차다. 기준값 표본이 3편 미만이면 총량 판정을 건너뛴다.
