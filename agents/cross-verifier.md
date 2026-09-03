@@ -3,6 +3,7 @@ name: cross-verifier
 description: "교차 검증 에이전트. 네 관점 검증 후 결과 반환. **중요: 이 에이전트의 결과는 사용자에게 보이지 않습니다. 호출자는 에이전트 완료 즉시 결과를 사용자에게 텍스트로 출력해야 하며, 결과 출력 전에 다른 도구를 호출하면 안 됩니다.**"
 tools: Read, Bash, Grep, Glob
 model: sonnet
+effort: high
 ---
 
 > **이 에이전트는 검증(읽기+분석) 작업만 처리합니다.**
