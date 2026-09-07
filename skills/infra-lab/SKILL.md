@@ -2,11 +2,24 @@
 name: infra-lab
 description: 클라우드 구성 하나를 만들고 부하를 올려 한계를 관측한 뒤 철거한다. 각 단계에서 어느 전문가를 부르고 무엇을 기록으로 남길지 정한다. 트리거 "부하 테스트", "인프라 검토", "인프라 설계", "샌드박스", "플레이그라운드", "infra-lab".
 trigger: ["부하 테스트", "부하테스트", "인프라 검토", "인프라 설계", "샌드박스", "플레이그라운드", "infra-lab"]
+requires:
+  - kind: command
+    name: terraform
+    check: command -v terraform || command -v tofu
+    install: https://developer.hashicorp.com/terraform/install
+    why: 구성 단계와 철거 단계
+  - kind: command
+    name: k6
+    check: command -v k6
+    install: https://grafana.com/docs/k6/latest/set-up/install-k6/
+    why: 부하 단계
 ---
 
 # 인프라 실험 랩
 
 클라우드 구성 하나를 만들고 부하를 올려 한계를 관측한 뒤 철거하는 한 바퀴를 정의한다. 역할과 도구는 외부가 갖고, 이 스킬은 **순서와 기록**만 갖는다.
+
+진입하기 전에 `requires:` 를 확인한다. 미충족이면 [`bootstrap`](../bootstrap/SKILL.md) 의 미충족 보고를 내고 멈춘다. 절반만 도는 것은 없는 것보다 나쁘다.
 
 ## 이 스킬이 갖는 것과 갖지 않는 것
 
@@ -95,4 +108,4 @@ trigger: ["부하 테스트", "부하테스트", "인프라 검토", "인프라 
 | 구성 검토 · 부하 판독 · 지표 검토 · 구성 보안 | 에이전트 마켓플레이스 | 읽고 의견만 |
 | 실행 규율과 원장 | 외부 오케스트레이션 스킬 | 작업마다 새 서브에이전트, 각 작업 뒤 검토 |
 
-이름과 설치 경로는 소비 프로젝트가 자기 환경에 맞춰 채운다. 이 레포는 어느 자리에 무엇이 필요한지만 정한다.
+구성 도구와 부하 도구는 `requires:` 에 있어 진입 게이트가 본다. 나머지는 없어도 회전이 돌고 판정의 근거가 얕아진다. 이름과 설치 경로는 소비 프로젝트가 자기 환경에 맞춰 채운다.
